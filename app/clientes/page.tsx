@@ -35,11 +35,13 @@ type ClientFormData = z.infer<typeof clientFormSchema>
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  onAddClient?: (client: Client) => void
 }
 
 function DataTable<TData, TValue>({
   columns,
   data,
+  onAddClient,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -100,7 +102,9 @@ function DataTable<TData, TValue>({
       __v: 0,
     }
 
-    setClients([...clients, mockNewClient])
+    if (onAddClient) {
+      onAddClient(mockNewClient)
+    }
     setOpen(false)
     setLoading(false)
   }
@@ -433,6 +437,7 @@ export default function CustomerPage() {
       <DataTable
         columns={createColumns(handleDeleteClient, sortOrder, sortByDate)}
         data={clients}
+        onAddClient={(newClient) => setClients([...clients, newClient])}
       />
       <div className="mt-8 p-6 bg-gradient-to-r from-green-950 to-emerald-950 rounded-lg border border-green-700">
         <p className="text-lg font-semibold text-gray-200">
