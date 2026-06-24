@@ -11,7 +11,16 @@ import { apiClient } from "@/lib/api-client"
 const paymentSchema = z.object({
   amount: z.number().positive("El monto debe ser positivo"),
   date: z.string().min(1, "La fecha es requerida"),
+  monthDate: z.string().min(1, "Debes seleccionar un mes"),
 })
+
+interface Month {
+  date: Date
+  monthKey: string
+  displayText: string
+  isPaid: boolean
+  isOverdue: boolean
+}
 
 interface Payment {
   _id: string
@@ -45,6 +54,7 @@ export default function ClientDetailsPage() {
   const [paymentLoading, setPaymentLoading] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [months, setMonths] = useState<Month[]>([])
 
   useEffect(() => {
     const fetchClientData = async () => {
@@ -55,6 +65,7 @@ export default function ClientDetailsPage() {
           setError(response.error)
         } else {
           setClient(response.data)
+          calculateMonths(response.data)
         }
 
         const paymentsResponse = await apiClient.get(`/getPayments/${clientId}`)
@@ -72,6 +83,46 @@ export default function ClientDetailsPage() {
     fetchClientData()
   }, [clientId])
 
+  const calculateMonths = (clientData: Client) => {
+    const entryDate = new Date(clientData.entryDate)
+    const today = new Date()
+    const calculatedMonths: Month[] = []
+
+    let currentDate = new Date(entryDate.getFullYear(), entryDate.getMonth(), 1)
+
+    while (currentDate <= today) {
+      const nextMonthStart = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1)
+      const monthKey = currentDate.toISOString().split('T')[0]
+      const displayText = currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
+
+      const isPaid = payments.some((p) => {
+        const paymentDate = new Date(p.date)
+        return paymentDate.getFullYear() === currentDate.getFullYear() &&
+               paymentDate.getMonth() === currentDate.getMonth()
+      })
+
+      const isOverdue = currentDate < today
+
+      calculatedMonths.push({
+        date: currentDate,
+        monthKey,
+        displayText: displayText.charAt(0).toUpperCase() + displayText.slice(1),
+        isPaid,
+        isOverdue,
+      })
+
+      currentDate = nextMonthStart
+    }
+
+    setMonths(calculatedMonths)
+  }
+
+  useEffect(() => {
+    if (client) {
+      calculateMonths(client)
+    }
+  }, [payments])
+
   const handleSubmitPayment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setPaymentError(null)
@@ -81,6 +132,7 @@ export default function ClientDetailsPage() {
     const paymentData = {
       amount: formData.get('amount') ? parseFloat(formData.get('amount') as string) : 0,
       date: formData.get('date') as string,
+      monthDate: formData.get('monthDate') as string,
     }
 
     const result = paymentSchema.safeParse(paymentData)
@@ -197,7 +249,7 @@ export default function ClientDetailsPage() {
 
         <div className="bg-white rounded-lg border p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold">Últimos Pagos</h3>
+            <h3 className="text-xl font-bold">Meses y Pagos</h3>
             <button
               onClick={() => setOpenPaymentModal(true)}
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
@@ -205,6 +257,39 @@ export default function ClientDetailsPage() {
               Agregar Pago
             </button>
           </div>
+          {months.length > 0 ? (
+            <div className="space-y-2">
+              {months.map((month) => (
+                <div key={month.monthKey} className={`p-3 rounded border flex justify-between items-center ${
+                  month.isPaid
+                    ? 'bg-green-50 border-green-200'
+                    : month.isOverdue
+                    ? 'bg-red-50 border-red-200'
+                    : 'bg-blue-50 border-blue-200'
+                }`}>
+                  <div>
+                    <p className="font-medium">{month.displayText}</p>
+                    <p className="text-sm text-gray-600">${client?.amount.toLocaleString()}</p>
+                  </div>
+                  <div className="text-right">
+                    {month.isPaid ? (
+                      <span className="text-green-600 font-semibold">✓ Pagado</span>
+                    ) : month.isOverdue ? (
+                      <span className="text-red-600 font-semibold">⚠️ Vencido</span>
+                    ) : (
+                      <span className="text-blue-600 font-semibold">◆ Pendiente</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-600">No hay meses calculados</p>
+          )}
+        </div>
+
+        <div className="bg-white rounded-lg border p-6">
+          <h3 className="text-xl font-bold mb-4">Historial de Pagos</h3>
           {payments.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -238,10 +323,30 @@ export default function ClientDetailsPage() {
               </p>
               <form onSubmit={handleSubmitPayment} className="space-y-4">
                 <div>
+                  <label htmlFor="monthDate" className="block text-sm font-medium mb-1">
+                    Mes a Pagar
+                  </label>
+                  <select
+                    id="monthDate"
+                    name="monthDate"
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Selecciona un mes</option>
+                    {months.map((month) => (
+                      <option key={month.monthKey} value={month.monthKey} disabled={month.isPaid}>
+                        {month.displayText} {month.isPaid ? '(Pagado)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {fieldErrors.monthDate && (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.monthDate}</p>
+                  )}
+                </div>
+                <div>
                   <label htmlFor="amount" className="block text-sm font-medium mb-1">
                     Monto
                   </label>
-                  <Input id="amount" name="amount" type="number" step="0.01" placeholder="Monto del pago" />
+                  <Input id="amount" name="amount" type="number" step="0.01" placeholder={`${client?.amount || 0}`} defaultValue={client?.amount || ''} />
                   {fieldErrors.amount && (
                     <p className="text-xs text-red-600 mt-1">{fieldErrors.amount}</p>
                   )}
