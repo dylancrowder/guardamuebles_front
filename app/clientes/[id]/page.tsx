@@ -60,34 +60,18 @@ export default function ClientDetailsPage() {
     const fetchClientData = async () => {
       try {
         setLoading(true)
-
-        // Mock data
-        const mockClient: Client = {
-          _id: clientId,
-          name: "movibox",
-          whatsapp: "3434343434",
-          entryDate: "2026-06-25T00:00:00.000+00:00",
-          dueDate: "2026-07-25T00:00:00.000+00:00",
-          amount: 89,
-          observations: "nh",
-          createdAt: "2026-06-24T16:53:54.462+00:00",
-          updatedAt: "2026-06-24T16:53:54.462+00:00",
-          __v: 0,
+        const response = await apiClient.get(`/getClient/${clientId}`)
+        if (response.error) {
+          setError(response.error)
+        } else {
+          setClient(response.data)
+          calculateMonths(response.data)
         }
 
-        const mockPayments: Payment[] = [
-          {
-            _id: "1",
-            clientId: clientId,
-            amount: 89,
-            date: "2026-06-25T10:00:00.000+00:00",
-            createdAt: "2026-06-25T10:00:00.000+00:00",
-          },
-        ]
-
-        setClient(mockClient)
-        calculateMonths(mockClient)
-        setPayments(mockPayments)
+        const paymentsResponse = await apiClient.get(`/getPayments/${clientId}`)
+        if (!paymentsResponse.error) {
+          setPayments(paymentsResponse.data || [])
+        }
       } catch (err) {
         setError('Error al cargar los detalles del cliente')
         console.error(err)
@@ -166,20 +150,15 @@ export default function ClientDetailsPage() {
     }
 
     setPaymentLoading(true)
+    const response = await apiClient.post(`/addPayment/${clientId}`, result.data)
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    // Mock successful response
-    const mockNewPayment: Payment = {
-      _id: Date.now().toString(),
-      clientId: clientId,
-      amount: result.data.amount,
-      date: result.data.date,
-      createdAt: new Date().toISOString(),
+    if (response.error) {
+      setPaymentError(response.error)
+      setPaymentLoading(false)
+      return
     }
 
-    setPayments([...payments, mockNewPayment])
+    setPayments([...payments, response.data])
     setOpenPaymentModal(false)
     setPaymentLoading(false)
     e.currentTarget.reset()

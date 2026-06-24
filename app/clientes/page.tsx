@@ -85,25 +85,16 @@ function DataTable<TData, TValue>({
 
     setLoading(true)
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const response = await apiClient.post('/addNewClient', result.data)
 
-    // Mock new client
-    const mockNewClient: Client = {
-      _id: Date.now().toString(),
-      name: result.data.name,
-      whatsapp: result.data.whatsapp,
-      amount: result.data.amount,
-      observations: result.data.observations,
-      entryDate: result.data.entryDate,
-      dueDate: new Date(new Date(result.data.entryDate).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      __v: 0,
+    if (response.error) {
+      setError(response.error)
+      setLoading(false)
+      return
     }
 
     if (onAddClient) {
-      onAddClient(mockNewClient)
+      onAddClient(response.data)
     }
     setOpen(false)
     setLoading(false)
@@ -369,36 +360,12 @@ export default function CustomerPage() {
     const fetchClients = async () => {
       try {
         setLoading(true)
-
-        // Mock data
-        const mockClients: Client[] = [
-          {
-            _id: "6a3c0ba2738bc57a04a3f466",
-            name: "movibox",
-            whatsapp: "3434343434",
-            entryDate: "2026-06-25T00:00:00.000+00:00",
-            dueDate: "2026-07-25T00:00:00.000+00:00",
-            amount: 89,
-            observations: "nh",
-            createdAt: "2026-06-24T16:53:54.462+00:00",
-            updatedAt: "2026-06-24T16:53:54.462+00:00",
-            __v: 0,
-          },
-          {
-            _id: "6a3c0e8e738bc57a04a3f467",
-            name: "juan rodriguez",
-            whatsapp: "43434343",
-            entryDate: "2026-06-10T00:00:00.000+00:00",
-            dueDate: "2026-07-10T00:00:00.000+00:00",
-            amount: 3434,
-            observations: "",
-            createdAt: "2026-06-24T17:06:22.457+00:00",
-            updatedAt: "2026-06-24T17:06:22.457+00:00",
-            __v: 0,
-          },
-        ]
-
-        setClients(mockClients)
+        const response = await apiClient.get('/getAllClients')
+        if (response.error) {
+          setError(response.error)
+        } else {
+          setClients(response.data || [])
+        }
       } catch (err) {
         setError('Error al cargar los clientes')
         console.error(err)
@@ -453,7 +420,12 @@ export default function CustomerPage() {
       return
     }
 
-    // Mock delete
-    setClients((prevClients) => prevClients.filter((client) => client._id !== id))
+    apiClient.delete(`/deleteClient/${id}`).then((response) => {
+      if (response.error) {
+        setError(response.error)
+      } else {
+        setClients((prevClients) => prevClients.filter((client) => client._id !== id))
+      }
+    })
   }
 }
