@@ -70,9 +70,10 @@ function DataTable<TData, TValue>({
 
     if (!result.success) {
       const errors: Record<string, string> = {}
-      result.error.errors.forEach((err) => {
-        if (err.path[0]) {
-          errors[err.path[0]] = err.message
+      result.error.issues.forEach((err) => {
+        const field = err.path[0]
+        if (typeof field === 'string') {
+          errors[field] = err.message
         }
       })
       setFieldErrors(errors)
