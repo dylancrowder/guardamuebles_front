@@ -349,7 +349,7 @@ export default function CustomerPage() {
         if (response.error) {
           setError(response.error)
         } else {
-          const clientsData = Array.isArray(response.data) ? response.data : (Array.isArray(response.data?.data) ? response.data.data : [])
+          const clientsData = Array.isArray(response.data?.clients) ? response.data.clients : (Array.isArray(response.data) ? response.data : [])
           console.log('Processed clients data:', clientsData)
           setClients(clientsData)
         }
