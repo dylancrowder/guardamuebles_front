@@ -244,6 +244,7 @@ interface Client {
   createdAt: string
   updatedAt: string
   __v: number
+  estado?: string
 }
 
 const createColumns = (
