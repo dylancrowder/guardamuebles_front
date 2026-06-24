@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { z } from "zod"
 import {
   ColumnDef,
@@ -219,14 +219,20 @@ function DataTable<TData, TValue>({
   </>)
 }
 
-interface User {
-  id: string
+interface Client {
+  _id: string
   name: string
-  email: string
-  status: "active" | "inactive"
+  whatsapp: string
+  entryDate: string
+  dueDate: string
+  amount: number
+  observations: string
+  createdAt: string
+  updatedAt: string
+  __v: number
 }
 
-const columns: ColumnDef<User>[] = [
+const columns: ColumnDef<Client>[] = [
   {
     accessorKey: "name",
     header: "Nombre",
@@ -242,42 +248,70 @@ const columns: ColumnDef<User>[] = [
   {
     accessorKey: "entryDate",
     header: "Fecha de Entrada",
-  },
-    {
-    accessorKey: "lastEntryDate",
-    header: "Ultimo pago",
-  },
-  {
-    accessorKey: "state",
-    header: "Estado",
-  }
-]
-
-const data: User[] = [
-  {
-    id: "1",
-    name: "Juan Pérez",
-    email: "juan@example.com",
-    status: "active",
+    cell: ({ row }) => {
+      const date = new Date(row.getValue("entryDate") as string)
+      return date.toLocaleDateString()
+    },
   },
   {
-    id: "2",
-    name: "María García",
-    email: "maria@example.com",
-    status: "active",
-  },
-  {
-    id: "3",
-    name: "Carlos López",
-    email: "carlos@example.com",
-    status: "inactive",
+    accessorKey: "dueDate",
+    header: "Fecha de Vencimiento",
+    cell: ({ row }) => {
+      const date = new Date(row.getValue("dueDate") as string)
+      return date.toLocaleDateString()
+    },
   },
 ]
 
 export default function CustomerPage() {
+  const [clients, setClients] = useState<Client[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        setLoading(true)
+        const response = await apiClient.get('/getAllClients')
+        if (response.error) {
+          setError(response.error)
+        } else {
+          setClients(response.data || [])
+        }
+      } catch (err) {
+        setError('Error al cargar los clientes')
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchClients()
+  }, [])
+
+  if (loading) {
+    return (
+      <AppShell title="Clientes">
+        <div className="flex justify-center items-center h-64">
+          <p className="text-gray-600">Cargando clientes...</p>
+        </div>
+      </AppShell>
+    )
+  }
+
+  if (error) {
+    return (
+      <AppShell title="Clientes">
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <p className="text-red-600">Error: {error}</p>
+        </div>
+      </AppShell>
+    )
+  }
+
   return (
-    <AppShell title="Customers">
-      <DataTable columns={columns} data={data} />
+    <AppShell title="Clientes">
+      <DataTable columns={columns} data={clients} />
     </AppShell>
   )
 }
