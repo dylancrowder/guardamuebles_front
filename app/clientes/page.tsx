@@ -382,6 +382,20 @@ export default function CustomerPage() {
     )
   }
 
+  const handleDeleteClient = (id: string) => {
+    if (!confirm('¿Estás seguro que deseas eliminar este cliente?')) {
+      return
+    }
+
+    apiClient.delete(`/api/clients/${id}`).then((response) => {
+      if (response.error) {
+        setError(response.error)
+      } else {
+        setClients((prevClients) => prevClients.filter((client) => client._id !== id))
+      }
+    })
+  }
+
   const totalAmount = Array.isArray(clients) ? clients.reduce((sum, client) => sum + client.amount, 0) : 0
 
   return (
@@ -399,18 +413,4 @@ export default function CustomerPage() {
       </div>
     </AppShell>
   )
-
-  function handleDeleteClient(id: string) {
-    if (!confirm('¿Estás seguro que deseas eliminar este cliente?')) {
-      return
-    }
-
-    apiClient.delete(`/api/clients/${id}`).then((response) => {
-      if (response.error) {
-        setError(response.error)
-      } else {
-        setClients((prevClients) => prevClients.filter((client) => client._id !== id))
-      }
-    })
-  }
 }
