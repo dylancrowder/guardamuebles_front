@@ -375,12 +375,19 @@ export default function CustomerPage() {
     )
   }
 
+  const totalAmount = clients.reduce((sum, client) => sum + client.amount, 0)
+
   return (
     <AppShell title="Clientes">
       <DataTable
         columns={createColumns(handleDeleteClient, sortOrder, sortByDate)}
         data={clients}
       />
+      <div className="mt-6 p-4 bg-gray-50 rounded-md border border-gray-200">
+        <p className="text-lg font-semibold text-gray-800">
+          Total ganado: <span className="text-green-600">${totalAmount.toLocaleString()}</span>
+        </p>
+      </div>
     </AppShell>
   )
 
