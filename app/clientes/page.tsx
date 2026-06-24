@@ -304,12 +304,20 @@ const createColumns = (
     accessorKey: "actions",
     header: "Acciones",
     cell: ({ row }) => (
-      <button
-        onClick={() => onDelete(row.original._id)}
-        className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-      >
-        Eliminar
-      </button>
+      <div className="flex gap-2">
+        <a
+          href={`/clientes/${row.original._id}`}
+          className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+        >
+          Ver más
+        </a>
+        <button
+          onClick={() => onDelete(row.original._id)}
+          className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+        >
+          Eliminar
+        </button>
+      </div>
     ),
   },
 ]
