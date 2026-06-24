@@ -106,12 +106,15 @@ function DataTable<TData, TValue>({
               <label htmlFor="amount" className="block text-sm font-medium mb-1">
                 Monto
               </label>
-               <label htmlFor="entryDate" className="block text-sm font-medium mb-1">
-                Fecha de Entrada
-              </label>
               <Input id="amount" name="amount" type="number" placeholder="Monto" />
             </div>
-             <div>
+            <div>
+              <label htmlFor="entryDate" className="block text-sm font-medium mb-1">
+                Fecha de Entrada
+              </label>
+              <Input id="entryDate" name="entryDate" type="date" required />
+            </div>
+            <div>
               <label htmlFor="observations" className="block text-sm font-medium mb-1">
                 Observaciones
               </label>
