@@ -112,7 +112,7 @@ export default function ClientDetailsPage() {
         )
       })
 
-      const isOverdue = currentDate < today
+      const isOverdue = currentDate < today && !isPaid
 
       calculatedMonths.push({
         date: currentDate,
