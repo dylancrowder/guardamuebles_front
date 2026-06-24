@@ -53,7 +53,6 @@ function DataTable<TData, TValue>({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -85,7 +84,7 @@ function DataTable<TData, TValue>({
 
     setLoading(true)
 
-    const response = await apiClient.post('/api/clients', result.data)
+    const response = await apiClient.post('/api/clients', result.data) as { data: Client; error?: string }
 
     if (response.error) {
       setError(response.error)
@@ -98,22 +97,6 @@ function DataTable<TData, TValue>({
     }
     setOpen(false)
     setLoading(false)
-  }
-
-  const handleDeleteClient = async (id: string) => {
-    if (!confirm('¿Estás seguro que deseas eliminar este cliente?')) {
-      return
-    }
-
-    setDeletingId(id)
-    const response = await apiClient.delete(`/deleteClient/${id}`)
-
-    if (response.error) {
-      setError(response.error)
-    } else {
-      setClients((prevClients) => prevClients.filter((client) => client._id !== id))
-    }
-    setDeletingId(null)
   }
 
   return (<>
@@ -361,6 +344,7 @@ export default function CustomerPage() {
       try {
         setLoading(true)
         const response = await apiClient.get('/api/clients')
+        console.log('Response from API:', response) // Log the response for debugging
         if (response.error) {
           setError(response.error)
         } else {
