@@ -51,6 +51,7 @@ function DataTable<TData, TValue>({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -92,6 +93,22 @@ function DataTable<TData, TValue>({
 
     setOpen(false)
     setLoading(false)
+  }
+
+  const handleDeleteClient = async (id: string) => {
+    if (!confirm('¿Estás seguro que deseas eliminar este cliente?')) {
+      return
+    }
+
+    setDeletingId(id)
+    const response = await apiClient.delete(`/deleteClient/${id}`)
+
+    if (response.error) {
+      setError(response.error)
+    } else {
+      setClients((prevClients) => prevClients.filter((client) => client._id !== id))
+    }
+    setDeletingId(null)
   }
 
   return (<>
@@ -232,7 +249,11 @@ interface Client {
   __v: number
 }
 
-const columns: ColumnDef<Client>[] = [
+const createColumns = (
+  onDelete: (id: string) => void,
+  sortOrder: 'asc' | 'desc' | null,
+  onSort: (order: 'asc' | 'desc' | null) => void
+): ColumnDef<Client>[] => [
   {
     accessorKey: "name",
     header: "Nombre",
@@ -247,7 +268,25 @@ const columns: ColumnDef<Client>[] = [
   },
   {
     accessorKey: "entryDate",
-    header: "Fecha de Entrada",
+    header: ({ column }) => (
+      <button
+        onClick={() => {
+          if (sortOrder === 'asc') {
+            onSort('desc')
+          } else if (sortOrder === 'desc') {
+            onSort(null)
+          } else {
+            onSort('asc')
+          }
+        }}
+        className="flex items-center gap-2 cursor-pointer hover:text-gray-700"
+      >
+        Fecha de Entrada
+        <span className="text-xs">
+          {sortOrder === 'asc' ? '↑' : sortOrder === 'desc' ? '↓' : '↕'}
+        </span>
+      </button>
+    ),
     cell: ({ row }) => {
       const date = new Date(row.getValue("entryDate") as string)
       return date.toLocaleDateString()
@@ -261,12 +300,39 @@ const columns: ColumnDef<Client>[] = [
       return date.toLocaleDateString()
     },
   },
+  {
+    accessorKey: "actions",
+    header: "Acciones",
+    cell: ({ row }) => (
+      <button
+        onClick={() => onDelete(row.original._id)}
+        className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+      >
+        Eliminar
+      </button>
+    ),
+  },
 ]
 
 export default function CustomerPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null)
+
+  const sortByDate = (order: 'asc' | 'desc' | null) => {
+    setSortOrder(order)
+    if (order === null) {
+      return
+    }
+
+    const sorted = [...clients].sort((a, b) => {
+      const dateA = new Date(a.entryDate).getTime()
+      const dateB = new Date(b.entryDate).getTime()
+      return order === 'asc' ? dateA - dateB : dateB - dateA
+    })
+    setClients(sorted)
+  }
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -311,7 +377,24 @@ export default function CustomerPage() {
 
   return (
     <AppShell title="Clientes">
-      <DataTable columns={columns} data={clients} />
+      <DataTable
+        columns={createColumns(handleDeleteClient, sortOrder, sortByDate)}
+        data={clients}
+      />
     </AppShell>
   )
+
+  function handleDeleteClient(id: string) {
+    if (!confirm('¿Estás seguro que deseas eliminar este cliente?')) {
+      return
+    }
+
+    apiClient.delete(`/deleteClient/${id}`).then((response) => {
+      if (response.error) {
+        setError(response.error)
+      } else {
+        setClients((prevClients) => prevClients.filter((client) => client._id !== id))
+      }
+    })
+  }
 }
