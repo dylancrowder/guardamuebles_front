@@ -2,9 +2,16 @@
 
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
+import { z } from "zod"
 import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { apiClient } from "@/lib/api-client"
+
+const paymentSchema = z.object({
+  amount: z.number().positive("El monto debe ser positivo"),
+  date: z.string().min(1, "La fecha es requerida"),
+})
 
 interface Payment {
   _id: string
@@ -34,6 +41,10 @@ export default function ClientDetailsPage() {
   const [payments, setPayments] = useState<Payment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [openPaymentModal, setOpenPaymentModal] = useState(false)
+  const [paymentLoading, setPaymentLoading] = useState(false)
+  const [paymentError, setPaymentError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const fetchClientData = async () => {
@@ -60,6 +71,46 @@ export default function ClientDetailsPage() {
 
     fetchClientData()
   }, [clientId])
+
+  const handleSubmitPayment = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setPaymentError(null)
+    setFieldErrors({})
+
+    const formData = new FormData(e.currentTarget)
+    const paymentData = {
+      amount: formData.get('amount') ? parseFloat(formData.get('amount') as string) : 0,
+      date: formData.get('date') as string,
+    }
+
+    const result = paymentSchema.safeParse(paymentData)
+
+    if (!result.success) {
+      const errors: Record<string, string> = {}
+      result.error.issues.forEach((err) => {
+        const field = err.path[0]
+        if (typeof field === 'string') {
+          errors[field] = err.message
+        }
+      })
+      setFieldErrors(errors)
+      return
+    }
+
+    setPaymentLoading(true)
+    const response = await apiClient.post(`/addPayment/${clientId}`, result.data)
+
+    if (response.error) {
+      setPaymentError(response.error)
+      setPaymentLoading(false)
+      return
+    }
+
+    setPayments([...payments, response.data])
+    setOpenPaymentModal(false)
+    setPaymentLoading(false)
+    e.currentTarget.reset()
+  }
 
   if (loading) {
     return (
@@ -145,7 +196,15 @@ export default function ClientDetailsPage() {
         </div>
 
         <div className="bg-white rounded-lg border p-6">
-          <h3 className="text-xl font-bold mb-4">Últimos Pagos</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold">Últimos Pagos</h3>
+            <button
+              onClick={() => setOpenPaymentModal(true)}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+            >
+              Agregar Pago
+            </button>
+          </div>
           {payments.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -169,6 +228,59 @@ export default function ClientDetailsPage() {
             <p className="text-gray-600">No hay pagos registrados</p>
           )}
         </div>
+
+        {openPaymentModal && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
+              <h2 className="text-lg font-semibold mb-2">Agregar Pago</h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Ingresa los datos del pago para {client.name}.
+              </p>
+              <form onSubmit={handleSubmitPayment} className="space-y-4">
+                <div>
+                  <label htmlFor="amount" className="block text-sm font-medium mb-1">
+                    Monto
+                  </label>
+                  <Input id="amount" name="amount" type="number" step="0.01" placeholder="Monto del pago" />
+                  {fieldErrors.amount && (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.amount}</p>
+                  )}
+                </div>
+                <div>
+                  <label htmlFor="date" className="block text-sm font-medium mb-1">
+                    Fecha del Pago
+                  </label>
+                  <Input id="date" name="date" type="date" />
+                  {fieldErrors.date && (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.date}</p>
+                  )}
+                </div>
+                {paymentError && (
+                  <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                    {paymentError}
+                  </div>
+                )}
+                <div className="flex gap-2 justify-end pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setOpenPaymentModal(false)}
+                    disabled={paymentLoading}
+                    className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition-colors disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={paymentLoading}
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+                  >
+                    {paymentLoading ? 'Guardando...' : 'Guardar Pago'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-2">
           <a
