@@ -27,7 +27,9 @@ interface Payment {
   clientId: string
   amount: number
   date: string
+  monthDate: string
   createdAt: string
+
 }
 
 interface Client {
@@ -36,6 +38,7 @@ interface Client {
   whatsapp: string
   entryDate: string
   dueDate: string
+
   amount: number
   observations: string
   createdAt: string
@@ -65,13 +68,16 @@ export default function ClientDetailsPage() {
           setError(response.error)
         } else {
           const clientData = response.data?.data || response.data
+          console.log('Fetched client data:', clientData)
           setClient(clientData)
           calculateMonths(clientData)
         }
 
         const paymentsResponse = await apiClient.get(`/api/payments/getPayments/${clientId}`)
         if (!paymentsResponse.error) {
-          const paymentsData = Array.isArray(paymentsResponse.data) ? paymentsResponse.data : paymentsResponse.data?.data || []
+          const paymentsData = paymentsResponse.data?.payments || []
+
+          console.log('Fetched payments data:', paymentsData)
           setPayments(paymentsData)
         }
       } catch (err) {
@@ -98,9 +104,12 @@ export default function ClientDetailsPage() {
       const displayText = currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
 
       const isPaid = payments.some((p) => {
-        const paymentDate = new Date(p.date)
-        return paymentDate.getFullYear() === currentDate.getFullYear() &&
-               paymentDate.getMonth() === currentDate.getMonth()
+        const paidMonth = new Date(p.monthDate)
+
+        return (
+          paidMonth.getFullYear() === currentDate.getFullYear() &&
+          paidMonth.getMonth() === currentDate.getMonth()
+        )
       })
 
       const isOverdue = currentDate < today
@@ -159,7 +168,7 @@ export default function ClientDetailsPage() {
       setPaymentLoading(false)
       return
     }
-
+console.log('Payment added successfully:', response.data)
     setPayments([...payments, response.data])
     setOpenPaymentModal(false)
     setPaymentLoading(false)
@@ -192,6 +201,8 @@ export default function ClientDetailsPage() {
   const isOverdue = monthsDue < 0
   const totalPaid = payments.reduce((sum, payment) => sum + payment.amount, 0)
   const remainingAmount = client.amount - totalPaid
+
+  console.log('payments', payments)
 
   return (
     <AppShell title={`${client.name} - Detalles`}>
@@ -262,13 +273,12 @@ export default function ClientDetailsPage() {
           {months.length > 0 ? (
             <div className="space-y-3">
               {months.map((month) => (
-                <div key={month.monthKey} className={`p-4 rounded-lg border-2 flex justify-between items-center transition-all ${
-                  month.isPaid
+                <div key={month.monthKey} className={`p-4 rounded-lg border-2 flex justify-between items-center transition-all ${month.isPaid
                     ? 'bg-green-950 border-green-700'
                     : month.isOverdue
-                    ? 'bg-red-950 border-red-700'
-                    : 'bg-blue-950 border-blue-700'
-                }`}>
+                      ? 'bg-red-950 border-red-700'
+                      : 'bg-blue-950 border-blue-700'
+                  }`}>
                   <div>
                     <p className="font-semibold text-white">{month.displayText}</p>
                     <p className="text-sm text-gray-300 mt-1">${client?.amount.toLocaleString()}</p>
