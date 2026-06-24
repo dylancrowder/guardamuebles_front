@@ -344,11 +344,12 @@ export default function CustomerPage() {
       try {
         setLoading(true)
         const response = await apiClient.get('/api/clients')
-        console.log('Response from API:', response) // Log the response for debugging
+        console.log('Response from API:', response)
         if (response.error) {
           setError(response.error)
         } else {
-          const clientsData = Array.isArray(response.data) ? response.data : response.data?.data || []
+          const clientsData = Array.isArray(response.data) ? response.data : (Array.isArray(response.data?.data) ? response.data.data : [])
+          console.log('Processed clients data:', clientsData)
           setClients(clientsData)
         }
       } catch (err) {
