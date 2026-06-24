@@ -60,7 +60,7 @@ export default function ClientDetailsPage() {
     const fetchClientData = async () => {
       try {
         setLoading(true)
-        const response = await apiClient.get(`/getClient/${clientId}`)
+        const response = await apiClient.get(`/api/clients/${clientId}`)
         if (response.error) {
           setError(response.error)
         } else {
@@ -68,7 +68,7 @@ export default function ClientDetailsPage() {
           calculateMonths(response.data)
         }
 
-        const paymentsResponse = await apiClient.get(`/getPayments/${clientId}`)
+        const paymentsResponse = await apiClient.get(`/api/payments/getPayments/${clientId}`)
         if (!paymentsResponse.error) {
           setPayments(paymentsResponse.data || [])
         }
@@ -150,7 +150,7 @@ export default function ClientDetailsPage() {
     }
 
     setPaymentLoading(true)
-    const response = await apiClient.post(`/addPayment/${clientId}`, result.data)
+    const response = await apiClient.post(`/api/payments/addPayment/${clientId}`, result.data)
 
     if (response.error) {
       setPaymentError(response.error)

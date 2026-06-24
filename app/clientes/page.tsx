@@ -85,7 +85,7 @@ function DataTable<TData, TValue>({
 
     setLoading(true)
 
-    const response = await apiClient.post('/addNewClient', result.data)
+    const response = await apiClient.post('/api/clients', result.data)
 
     if (response.error) {
       setError(response.error)
@@ -360,7 +360,7 @@ export default function CustomerPage() {
     const fetchClients = async () => {
       try {
         setLoading(true)
-        const response = await apiClient.get('/getAllClients')
+        const response = await apiClient.get('/api/clients')
         if (response.error) {
           setError(response.error)
         } else {
@@ -420,7 +420,7 @@ export default function CustomerPage() {
       return
     }
 
-    apiClient.delete(`/deleteClient/${id}`).then((response) => {
+    apiClient.delete(`/api/clients/${id}`).then((response) => {
       if (response.error) {
         setError(response.error)
       } else {
