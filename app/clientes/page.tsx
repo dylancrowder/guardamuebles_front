@@ -31,7 +31,7 @@ interface DataTableProps<TData, TValue> {
 interface ClientFormData {
   name: string
   whatsapp: string
-  amount: string
+  amount: number
   observations: string
   entryDate: string
 }
@@ -59,8 +59,8 @@ function DataTable<TData, TValue>({
     const clientData: ClientFormData = {
       name: formData.get('name') as string,
       whatsapp: formData.get('whatsapp') as string,
-      amount: formData.get('amount') as string,
-       entryDate: formData.get('entryDate') as string,
+      amount: parseFloat(formData.get('amount') as string),
+      entryDate: formData.get('entryDate') as string,
       observations: formData.get('observations') as string,
     }
 
