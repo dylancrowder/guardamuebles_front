@@ -364,7 +364,8 @@ export default function CustomerPage() {
         if (response.error) {
           setError(response.error)
         } else {
-          setClients(response.data || [])
+          const clientsData = Array.isArray(response.data) ? response.data : response.data?.data || []
+          setClients(clientsData)
         }
       } catch (err) {
         setError('Error al cargar los clientes')
@@ -397,7 +398,7 @@ export default function CustomerPage() {
     )
   }
 
-  const totalAmount = clients.reduce((sum, client) => sum + client.amount, 0)
+  const totalAmount = Array.isArray(clients) ? clients.reduce((sum, client) => sum + client.amount, 0) : 0
 
   return (
     <AppShell title="Clientes">

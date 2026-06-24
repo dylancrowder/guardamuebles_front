@@ -64,13 +64,15 @@ export default function ClientDetailsPage() {
         if (response.error) {
           setError(response.error)
         } else {
-          setClient(response.data)
-          calculateMonths(response.data)
+          const clientData = response.data?.data || response.data
+          setClient(clientData)
+          calculateMonths(clientData)
         }
 
         const paymentsResponse = await apiClient.get(`/api/payments/getPayments/${clientId}`)
         if (!paymentsResponse.error) {
-          setPayments(paymentsResponse.data || [])
+          const paymentsData = Array.isArray(paymentsResponse.data) ? paymentsResponse.data : paymentsResponse.data?.data || []
+          setPayments(paymentsData)
         }
       } catch (err) {
         setError('Error al cargar los detalles del cliente')
