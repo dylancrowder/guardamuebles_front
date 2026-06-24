@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { z } from "zod"
 import {
   ColumnDef,
   flexRender,
@@ -21,19 +22,19 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { apiClient } from "@/lib/api-client"
 
+const clientFormSchema = z.object({
+  name: z.string().min(1, "El nombre es requerido"),
+  whatsapp: z.string().min(1, "El número de WhatsApp es requerido"),
+  amount: z.number().positive("El monto debe ser un número positivo"),
+  observations: z.string().optional().default(""),
+  entryDate: z.string().min(1, "La fecha de entrada es requerida"),
+})
 
+type ClientFormData = z.infer<typeof clientFormSchema>
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
-}
-
-interface ClientFormData {
-  name: string
-  whatsapp: string
-  amount: number
-  observations: string
-  entryDate: string
 }
 
 function DataTable<TData, TValue>({
@@ -51,58 +52,36 @@ function DataTable<TData, TValue>({
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
-  const validateForm = (formData: FormData): Record<string, string> => {
-    const errors: Record<string, string> = {}
-
-    const name = formData.get('name') as string
-    if (!name?.trim()) {
-      errors.name = 'El nombre es requerido'
-    }
-
-    const whatsapp = formData.get('whatsapp') as string
-    if (!whatsapp?.trim()) {
-      errors.whatsapp = 'El número de WhatsApp es requerido'
-    }
-
-    const amount = formData.get('amount') as string
-    if (!amount?.trim()) {
-      errors.amount = 'El monto es requerido'
-    } else if (isNaN(parseFloat(amount))) {
-      errors.amount = 'El monto debe ser un número válido'
-    }
-
-    const entryDate = formData.get('entryDate') as string
-    if (!entryDate?.trim()) {
-      errors.entryDate = 'La fecha de entrada es requerida'
-    }
-
-    return errors
-  }
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
     setFieldErrors({})
 
     const formData = new FormData(e.currentTarget)
-    const validationErrors = validateForm(formData)
+    const formDataObj = {
+      name: formData.get('name') as string,
+      whatsapp: formData.get('whatsapp') as string,
+      amount: formData.get('amount') ? parseFloat(formData.get('amount') as string) : 0,
+      entryDate: formData.get('entryDate') as string,
+      observations: formData.get('observations') as string,
+    }
 
-    if (Object.keys(validationErrors).length > 0) {
-      setFieldErrors(validationErrors)
+    const result = clientFormSchema.safeParse(formDataObj)
+
+    if (!result.success) {
+      const errors: Record<string, string> = {}
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          errors[err.path[0]] = err.message
+        }
+      })
+      setFieldErrors(errors)
       return
     }
 
     setLoading(true)
 
-    const clientData: ClientFormData = {
-      name: formData.get('name') as string,
-      whatsapp: formData.get('whatsapp') as string,
-      amount: parseFloat(formData.get('amount') as string),
-      entryDate: formData.get('entryDate') as string,
-      observations: formData.get('observations') as string,
-    }
-
-    const response = await apiClient.post('/addNewClient', clientData)
+    const response = await apiClient.post('/addNewClient', result.data)
 
     if (response.error) {
       setError(response.error)
