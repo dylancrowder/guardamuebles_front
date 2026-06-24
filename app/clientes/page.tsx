@@ -49,13 +49,51 @@ function DataTable<TData, TValue>({
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
+  const validateForm = (formData: FormData): Record<string, string> => {
+    const errors: Record<string, string> = {}
+
+    const name = formData.get('name') as string
+    if (!name?.trim()) {
+      errors.name = 'El nombre es requerido'
+    }
+
+    const whatsapp = formData.get('whatsapp') as string
+    if (!whatsapp?.trim()) {
+      errors.whatsapp = 'El número de WhatsApp es requerido'
+    }
+
+    const amount = formData.get('amount') as string
+    if (!amount?.trim()) {
+      errors.amount = 'El monto es requerido'
+    } else if (isNaN(parseFloat(amount))) {
+      errors.amount = 'El monto debe ser un número válido'
+    }
+
+    const entryDate = formData.get('entryDate') as string
+    if (!entryDate?.trim()) {
+      errors.entryDate = 'La fecha de entrada es requerida'
+    }
+
+    return errors
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setLoading(true)
     setError(null)
+    setFieldErrors({})
 
     const formData = new FormData(e.currentTarget)
+    const validationErrors = validateForm(formData)
+
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors)
+      return
+    }
+
+    setLoading(true)
+
     const clientData: ClientFormData = {
       name: formData.get('name') as string,
       whatsapp: formData.get('whatsapp') as string,
@@ -74,7 +112,6 @@ function DataTable<TData, TValue>({
 
     setOpen(false)
     setLoading(false)
-    // Aquí puedes recargar los datos o agregar el nuevo cliente a la tabla
   }
 
   return (<>
@@ -95,24 +132,36 @@ function DataTable<TData, TValue>({
                 Nombre
               </label>
               <Input id="name" name="name" placeholder="Nombre del cliente" />
+              {fieldErrors.name && (
+                <p className="text-xs text-red-600 mt-1">{fieldErrors.name}</p>
+              )}
             </div>
             <div>
               <label htmlFor="whatsapp" className="block text-sm font-medium mb-1">
                 WhatsApp
               </label>
               <Input id="whatsapp" name="whatsapp" placeholder="Número de WhatsApp" />
+              {fieldErrors.whatsapp && (
+                <p className="text-xs text-red-600 mt-1">{fieldErrors.whatsapp}</p>
+              )}
             </div>
             <div>
               <label htmlFor="amount" className="block text-sm font-medium mb-1">
                 Monto
               </label>
               <Input id="amount" name="amount" type="number" placeholder="Monto" />
+              {fieldErrors.amount && (
+                <p className="text-xs text-red-600 mt-1">{fieldErrors.amount}</p>
+              )}
             </div>
             <div>
               <label htmlFor="entryDate" className="block text-sm font-medium mb-1">
                 Fecha de Entrada
               </label>
-              <Input id="entryDate" name="entryDate" type="date" required />
+              <Input id="entryDate" name="entryDate" type="date" />
+              {fieldErrors.entryDate && (
+                <p className="text-xs text-red-600 mt-1">{fieldErrors.entryDate}</p>
+              )}
             </div>
             <div>
               <label htmlFor="observations" className="block text-sm font-medium mb-1">
