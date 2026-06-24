@@ -279,26 +279,26 @@ export default function ClientDetailsPage() {
             </button>
           </div>
           {months.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {months.map((month) => (
-                <div key={month.monthKey} className={`p-3 rounded border flex justify-between items-center ${
+                <div key={month.monthKey} className={`p-4 rounded-lg border-2 flex justify-between items-center transition-all ${
                   month.isPaid
-                    ? 'bg-green-50 border-green-200'
+                    ? 'bg-green-50 border-green-300'
                     : month.isOverdue
-                    ? 'bg-red-50 border-red-200'
-                    : 'bg-blue-50 border-blue-200'
+                    ? 'bg-red-50 border-red-300'
+                    : 'bg-blue-50 border-blue-300'
                 }`}>
                   <div>
-                    <p className="font-medium">{month.displayText}</p>
-                    <p className="text-sm text-gray-600">${client?.amount.toLocaleString()}</p>
+                    <p className="font-semibold text-gray-900">{month.displayText}</p>
+                    <p className="text-sm text-gray-700 mt-1">${client?.amount.toLocaleString()}</p>
                   </div>
                   <div className="text-right">
                     {month.isPaid ? (
-                      <span className="text-green-600 font-semibold">✓ Pagado</span>
+                      <span className="text-green-700 font-bold">✓ Pagado</span>
                     ) : month.isOverdue ? (
-                      <span className="text-red-600 font-semibold">⚠️ Vencido</span>
+                      <span className="text-red-700 font-bold">⚠️ Vencido</span>
                     ) : (
-                      <span className="text-blue-600 font-semibold">◆ Pendiente</span>
+                      <span className="text-blue-700 font-bold">◆ Pendiente</span>
                     )}
                   </div>
                 </div>
@@ -336,21 +336,21 @@ export default function ClientDetailsPage() {
         </div>
 
         {openPaymentModal && (
-          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
-            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
-              <h2 className="text-lg font-semibold mb-2">Agregar Pago</h2>
-              <p className="text-sm text-gray-600 mb-4">
-                Ingresa los datos del pago para {client.name}.
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Agregar Pago</h2>
+              <p className="text-sm text-gray-600 mb-6">
+                Ingresa los datos del pago para <strong>{client.name}</strong>.
               </p>
               <form onSubmit={handleSubmitPayment} className="space-y-4">
                 <div>
-                  <label htmlFor="monthDate" className="block text-sm font-medium mb-1">
+                  <label htmlFor="monthDate" className="block text-sm font-semibold text-gray-800 mb-2">
                     Mes a Pagar
                   </label>
                   <select
                     id="monthDate"
                     name="monthDate"
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
                   >
                     <option value="">Selecciona un mes</option>
                     {months.map((month) => (
@@ -364,41 +364,41 @@ export default function ClientDetailsPage() {
                   )}
                 </div>
                 <div>
-                  <label htmlFor="amount" className="block text-sm font-medium mb-1">
+                  <label htmlFor="amount" className="block text-sm font-semibold text-gray-800 mb-2">
                     Monto
                   </label>
-                  <Input id="amount" name="amount" type="number" step="0.01" placeholder={`${client?.amount || 0}`} defaultValue={client?.amount || ''} />
+                  <Input id="amount" name="amount" type="number" step="0.01" placeholder={`${client?.amount || 0}`} defaultValue={client?.amount || ''} className="bg-gray-50 border-gray-300" />
                   {fieldErrors.amount && (
                     <p className="text-xs text-red-600 mt-1">{fieldErrors.amount}</p>
                   )}
                 </div>
                 <div>
-                  <label htmlFor="date" className="block text-sm font-medium mb-1">
+                  <label htmlFor="date" className="block text-sm font-semibold text-gray-800 mb-2">
                     Fecha del Pago
                   </label>
-                  <Input id="date" name="date" type="date" />
+                  <Input id="date" name="date" type="date" className="bg-gray-50 border-gray-300" />
                   {fieldErrors.date && (
                     <p className="text-xs text-red-600 mt-1">{fieldErrors.date}</p>
                   )}
                 </div>
                 {paymentError && (
-                  <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                  <div className="text-sm text-red-700 bg-red-50 p-3 rounded border border-red-200">
                     {paymentError}
                   </div>
                 )}
-                <div className="flex gap-2 justify-end pt-4">
+                <div className="flex gap-2 justify-end pt-6">
                   <button
                     type="button"
                     onClick={() => setOpenPaymentModal(false)}
                     disabled={paymentLoading}
-                    className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition-colors disabled:opacity-50"
+                    className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors font-medium disabled:opacity-50"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={paymentLoading}
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+                    className="px-4 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
                   >
                     {paymentLoading ? 'Guardando...' : 'Guardar Pago'}
                   </button>
@@ -408,12 +408,12 @@ export default function ClientDetailsPage() {
           </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 pt-4">
           <a
             href="/clientes"
-            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
           >
-            Volver a Clientes
+            ← Volver a Clientes
           </a>
         </div>
       </div>

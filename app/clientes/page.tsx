@@ -122,77 +122,86 @@ function DataTable<TData, TValue>({
   }
 
   return (<>
-    <div className="flex justify-end my-4">
-      <Button onClick={() => setOpen(true)}>Agregar cliente</Button>
+    <div className="flex justify-end mb-6">
+      <button
+        onClick={() => setOpen(true)}
+        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+      >
+        + Agregar cliente
+      </button>
     </div>
 
     {open && (
-      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
-        <div className="bg-black rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
-          <h2 className="text-lg font-semibold mb-2">Agregar nuevo cliente</h2>
-          <p className="text-sm text-gray-600 mb-4">
+      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Agregar nuevo cliente</h2>
+          <p className="text-sm text-gray-600 mb-6">
             Ingresa los datos del cliente. Haz clic en guardar cuando termines.
           </p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium mb-1">
+              <label htmlFor="name" className="block text-sm font-semibold text-gray-800 mb-2">
                 Nombre
               </label>
-              <Input id="name" name="name" placeholder="Nombre del cliente" />
+              <Input id="name" name="name" placeholder="Nombre del cliente" className="bg-gray-50 border-gray-300" />
               {fieldErrors.name && (
                 <p className="text-xs text-red-600 mt-1">{fieldErrors.name}</p>
               )}
             </div>
             <div>
-              <label htmlFor="whatsapp" className="block text-sm font-medium mb-1">
+              <label htmlFor="whatsapp" className="block text-sm font-semibold text-gray-800 mb-2">
                 WhatsApp
               </label>
-              <Input id="whatsapp" name="whatsapp" placeholder="Número de WhatsApp" />
+              <Input id="whatsapp" name="whatsapp" placeholder="Número de WhatsApp" className="bg-gray-50 border-gray-300" />
               {fieldErrors.whatsapp && (
                 <p className="text-xs text-red-600 mt-1">{fieldErrors.whatsapp}</p>
               )}
             </div>
             <div>
-              <label htmlFor="amount" className="block text-sm font-medium mb-1">
-                Monto
+              <label htmlFor="amount" className="block text-sm font-semibold text-gray-800 mb-2">
+                Monto Mensual
               </label>
-              <Input id="amount" name="amount" type="number" placeholder="Monto" />
+              <Input id="amount" name="amount" type="number" placeholder="Monto" className="bg-gray-50 border-gray-300" />
               {fieldErrors.amount && (
                 <p className="text-xs text-red-600 mt-1">{fieldErrors.amount}</p>
               )}
             </div>
             <div>
-              <label htmlFor="entryDate" className="block text-sm font-medium mb-1">
+              <label htmlFor="entryDate" className="block text-sm font-semibold text-gray-800 mb-2">
                 Fecha de Entrada
               </label>
-              <Input id="entryDate" name="entryDate" type="date" />
+              <Input id="entryDate" name="entryDate" type="date" className="bg-gray-50 border-gray-300" />
               {fieldErrors.entryDate && (
                 <p className="text-xs text-red-600 mt-1">{fieldErrors.entryDate}</p>
               )}
             </div>
             <div>
-              <label htmlFor="observations" className="block text-sm font-medium mb-1">
+              <label htmlFor="observations" className="block text-sm font-semibold text-gray-800 mb-2">
                 Observaciones
               </label>
-              <Input id="observations" name="observations" placeholder="Observaciones" />
+              <Input id="observations" name="observations" placeholder="Observaciones" className="bg-gray-50 border-gray-300" />
             </div>
             {error && (
-              <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+              <div className="text-sm text-red-700 bg-red-50 p-3 rounded border border-red-200">
                 {error}
               </div>
             )}
-            <div className="flex gap-2 justify-end pt-4">
-              <Button
-                variant="outline"
+            <div className="flex gap-2 justify-end pt-6">
+              <button
                 type="button"
                 onClick={() => setOpen(false)}
                 disabled={loading}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors font-medium disabled:opacity-50"
               >
                 Cancelar
-              </Button>
-              <Button type="submit" disabled={loading}>
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+              >
                 {loading ? 'Guardando...' : 'Guardar cliente'}
-              </Button>
+              </button>
             </div>
           </form>
         </div>
@@ -317,13 +326,13 @@ const createColumns = (
       <div className="flex gap-2">
         <a
           href={`/clientes/${row.original._id}`}
-          className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
         >
           Ver más
         </a>
         <button
           onClick={() => onDelete(row.original._id)}
-          className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+          className="px-3 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
         >
           Eliminar
         </button>
@@ -425,9 +434,10 @@ export default function CustomerPage() {
         columns={createColumns(handleDeleteClient, sortOrder, sortByDate)}
         data={clients}
       />
-      <div className="mt-6 p-4 bg-gray-50 rounded-md border border-gray-200">
-        <p className="text-lg font-semibold text-gray-800">
-          Total ganado: <span className="text-green-600">${totalAmount.toLocaleString()}</span>
+      <div className="mt-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+        <p className="text-lg font-semibold text-gray-900">
+          Total ganado:
+          <span className="ml-2 text-2xl font-bold text-green-700">${totalAmount.toLocaleString()}</span>
         </p>
       </div>
     </AppShell>
