@@ -198,8 +198,8 @@ export default function ClientDetailsPage() {
   if (error || !client) {
     return (
       <AppShell title="Detalles del Cliente">
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <p className="text-red-600">Error: {error || 'Cliente no encontrado'}</p>
+        <div className="bg-red-950 border border-red-700 rounded-md p-4">
+          <p className="text-red-400">Error: {error || 'Cliente no encontrado'}</p>
         </div>
       </AppShell>
     )
@@ -215,65 +215,65 @@ export default function ClientDetailsPage() {
   return (
     <AppShell title={`${client.name} - Detalles`}>
       <div className="space-y-6">
-        <div className="bg-white rounded-lg border p-6">
-          <h2 className="text-2xl font-bold mb-4">{client.name}</h2>
+        <div className="bg-gray-900 rounded-lg border border-gray-700 p-6">
+          <h2 className="text-2xl font-bold text-white mb-4">{client.name}</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-gray-600">WhatsApp</p>
-              <p className="text-lg font-medium">{client.whatsapp}</p>
+              <p className="text-sm text-gray-400">WhatsApp</p>
+              <p className="text-lg font-medium text-white">{client.whatsapp}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Monto Total</p>
-              <p className="text-lg font-medium">${client.amount.toLocaleString()}</p>
+              <p className="text-sm text-gray-400">Monto Total</p>
+              <p className="text-lg font-medium text-white">${client.amount.toLocaleString()}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Fecha de Entrada</p>
-              <p className="text-lg font-medium">{new Date(client.entryDate).toLocaleDateString()}</p>
+              <p className="text-sm text-gray-400">Fecha de Entrada</p>
+              <p className="text-lg font-medium text-white">{new Date(client.entryDate).toLocaleDateString()}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Fecha de Vencimiento</p>
-              <p className="text-lg font-medium">{new Date(client.dueDate).toLocaleDateString()}</p>
+              <p className="text-sm text-gray-400">Fecha de Vencimiento</p>
+              <p className="text-lg font-medium text-white">{new Date(client.dueDate).toLocaleDateString()}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Total Pagado</p>
-              <p className="text-lg font-medium text-green-600">${totalPaid.toLocaleString()}</p>
+              <p className="text-sm text-gray-400">Total Pagado</p>
+              <p className="text-lg font-medium text-green-400">${totalPaid.toLocaleString()}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Monto Restante</p>
-              <p className={`text-lg font-medium ${remainingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+              <p className="text-sm text-gray-400">Monto Restante</p>
+              <p className={`text-lg font-medium ${remainingAmount > 0 ? 'text-red-400' : 'text-green-400'}`}>
                 ${remainingAmount.toLocaleString()}
               </p>
             </div>
           </div>
           {client.observations && (
-            <div className="mt-4 pt-4 border-t">
-              <p className="text-sm text-gray-600">Observaciones</p>
-              <p className="text-gray-800">{client.observations}</p>
+            <div className="mt-4 pt-4 border-t border-gray-700">
+              <p className="text-sm text-gray-400">Observaciones</p>
+              <p className="text-gray-300">{client.observations}</p>
             </div>
           )}
         </div>
 
-        <div className="bg-white rounded-lg border p-6">
-          <h3 className="text-xl font-bold mb-4">Estado de Vencimiento</h3>
-          <div className={`p-4 rounded-md ${isOverdue ? 'bg-red-50 border border-red-200' : 'bg-blue-50 border border-blue-200'}`}>
+        <div className="bg-gray-900 rounded-lg border border-gray-700 p-6">
+          <h3 className="text-xl font-bold text-white mb-4">Estado de Vencimiento</h3>
+          <div className={`p-4 rounded-md ${isOverdue ? 'bg-red-950 border border-red-700' : 'bg-blue-950 border border-blue-700'}`}>
             {isOverdue ? (
-              <p className="text-red-700 font-semibold">
+              <p className="text-red-400 font-semibold">
                 ⚠️ Vencido hace {Math.abs(monthsDue)} mes(es)
               </p>
             ) : (
-              <p className="text-blue-700 font-semibold">
+              <p className="text-blue-400 font-semibold">
                 ✓ Vence en {monthsDue} mes(es)
               </p>
             )}
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border p-6">
+        <div className="bg-gray-900 rounded-lg border border-gray-700 p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold">Meses y Pagos</h3>
+            <h3 className="text-xl font-bold text-white">Meses y Pagos</h3>
             <button
               onClick={() => setOpenPaymentModal(true)}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
             >
               Agregar Pago
             </button>
@@ -283,74 +283,74 @@ export default function ClientDetailsPage() {
               {months.map((month) => (
                 <div key={month.monthKey} className={`p-4 rounded-lg border-2 flex justify-between items-center transition-all ${
                   month.isPaid
-                    ? 'bg-green-50 border-green-300'
+                    ? 'bg-green-950 border-green-700'
                     : month.isOverdue
-                    ? 'bg-red-50 border-red-300'
-                    : 'bg-blue-50 border-blue-300'
+                    ? 'bg-red-950 border-red-700'
+                    : 'bg-blue-950 border-blue-700'
                 }`}>
                   <div>
-                    <p className="font-semibold text-gray-900">{month.displayText}</p>
-                    <p className="text-sm text-gray-700 mt-1">${client?.amount.toLocaleString()}</p>
+                    <p className="font-semibold text-white">{month.displayText}</p>
+                    <p className="text-sm text-gray-300 mt-1">${client?.amount.toLocaleString()}</p>
                   </div>
                   <div className="text-right">
                     {month.isPaid ? (
-                      <span className="text-green-700 font-bold">✓ Pagado</span>
+                      <span className="text-green-400 font-bold">✓ Pagado</span>
                     ) : month.isOverdue ? (
-                      <span className="text-red-700 font-bold">⚠️ Vencido</span>
+                      <span className="text-red-400 font-bold">⚠️ Vencido</span>
                     ) : (
-                      <span className="text-blue-700 font-bold">◆ Pendiente</span>
+                      <span className="text-blue-400 font-bold">◆ Pendiente</span>
                     )}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-600">No hay meses calculados</p>
+            <p className="text-gray-400">No hay meses calculados</p>
           )}
         </div>
 
-        <div className="bg-white rounded-lg border p-6">
-          <h3 className="text-xl font-bold mb-4">Historial de Pagos</h3>
+        <div className="bg-gray-900 rounded-lg border border-gray-700 p-6">
+          <h3 className="text-xl font-bold text-white mb-4">Historial de Pagos</h3>
           {payments.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 px-2">Fecha</th>
-                    <th className="text-left py-2 px-2">Monto</th>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left py-2 px-2 text-gray-300">Fecha</th>
+                    <th className="text-left py-2 px-2 text-gray-300">Monto</th>
                   </tr>
                 </thead>
                 <tbody>
                   {payments.map((payment) => (
-                    <tr key={payment._id} className="border-b hover:bg-gray-50">
-                      <td className="py-2 px-2">{new Date(payment.date).toLocaleDateString()}</td>
-                      <td className="py-2 px-2 font-medium text-green-600">${payment.amount.toLocaleString()}</td>
+                    <tr key={payment._id} className="border-b border-gray-700 hover:bg-gray-800">
+                      <td className="py-2 px-2 text-gray-200">{new Date(payment.date).toLocaleDateString()}</td>
+                      <td className="py-2 px-2 font-medium text-green-400">${payment.amount.toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <p className="text-gray-600">No hay pagos registrados</p>
+            <p className="text-gray-400">No hay pagos registrados</p>
           )}
         </div>
 
         {openPaymentModal && (
-          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Agregar Pago</h2>
-              <p className="text-sm text-gray-600 mb-6">
-                Ingresa los datos del pago para <strong>{client.name}</strong>.
+          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+            <div className="bg-gray-900 rounded-lg shadow-xl p-6 max-w-md w-full border border-gray-700">
+              <h2 className="text-2xl font-bold text-white mb-2">Agregar Pago</h2>
+              <p className="text-sm text-gray-400 mb-6">
+                Ingresa los datos del pago para <strong className="text-white">{client.name}</strong>.
               </p>
               <form onSubmit={handleSubmitPayment} className="space-y-4">
                 <div>
-                  <label htmlFor="monthDate" className="block text-sm font-semibold text-gray-800 mb-2">
+                  <label htmlFor="monthDate" className="block text-sm font-semibold text-gray-200 mb-2">
                     Mes a Pagar
                   </label>
                   <select
                     id="monthDate"
                     name="monthDate"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
+                    className="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
                   >
                     <option value="">Selecciona un mes</option>
                     {months.map((month) => (
@@ -360,29 +360,29 @@ export default function ClientDetailsPage() {
                     ))}
                   </select>
                   {fieldErrors.monthDate && (
-                    <p className="text-xs text-red-600 mt-1">{fieldErrors.monthDate}</p>
+                    <p className="text-xs text-red-400 mt-1">{fieldErrors.monthDate}</p>
                   )}
                 </div>
                 <div>
-                  <label htmlFor="amount" className="block text-sm font-semibold text-gray-800 mb-2">
+                  <label htmlFor="amount" className="block text-sm font-semibold text-gray-200 mb-2">
                     Monto
                   </label>
-                  <Input id="amount" name="amount" type="number" step="0.01" placeholder={`${client?.amount || 0}`} defaultValue={client?.amount || ''} className="bg-gray-50 border-gray-300" />
+                  <Input id="amount" name="amount" type="number" step="0.01" placeholder={`${client?.amount || 0}`} defaultValue={client?.amount || ''} className="bg-gray-800 border-gray-600 text-white" />
                   {fieldErrors.amount && (
-                    <p className="text-xs text-red-600 mt-1">{fieldErrors.amount}</p>
+                    <p className="text-xs text-red-400 mt-1">{fieldErrors.amount}</p>
                   )}
                 </div>
                 <div>
-                  <label htmlFor="date" className="block text-sm font-semibold text-gray-800 mb-2">
+                  <label htmlFor="date" className="block text-sm font-semibold text-gray-200 mb-2">
                     Fecha del Pago
                   </label>
-                  <Input id="date" name="date" type="date" className="bg-gray-50 border-gray-300" />
+                  <Input id="date" name="date" type="date" className="bg-gray-800 border-gray-600 text-white" />
                   {fieldErrors.date && (
-                    <p className="text-xs text-red-600 mt-1">{fieldErrors.date}</p>
+                    <p className="text-xs text-red-400 mt-1">{fieldErrors.date}</p>
                   )}
                 </div>
                 {paymentError && (
-                  <div className="text-sm text-red-700 bg-red-50 p-3 rounded border border-red-200">
+                  <div className="text-sm text-red-400 bg-red-950 p-3 rounded border border-red-700">
                     {paymentError}
                   </div>
                 )}
@@ -391,7 +391,7 @@ export default function ClientDetailsPage() {
                     type="button"
                     onClick={() => setOpenPaymentModal(false)}
                     disabled={paymentLoading}
-                    className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors font-medium disabled:opacity-50"
+                    className="px-4 py-2 text-gray-200 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors font-medium disabled:opacity-50"
                   >
                     Cancelar
                   </button>

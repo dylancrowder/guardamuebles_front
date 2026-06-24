@@ -132,57 +132,57 @@ function DataTable<TData, TValue>({
     </div>
 
     {open && (
-      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Agregar nuevo cliente</h2>
-          <p className="text-sm text-gray-600 mb-6">
+      <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+        <div className="bg-gray-900 rounded-lg shadow-xl p-6 max-w-md w-full border border-gray-700">
+          <h2 className="text-2xl font-bold text-white mb-2">Agregar nuevo cliente</h2>
+          <p className="text-sm text-gray-400 mb-6">
             Ingresa los datos del cliente. Haz clic en guardar cuando termines.
           </p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-semibold text-gray-800 mb-2">
+              <label htmlFor="name" className="block text-sm font-semibold text-gray-200 mb-2">
                 Nombre
               </label>
-              <Input id="name" name="name" placeholder="Nombre del cliente" className="bg-gray-50 border-gray-300" />
+              <Input id="name" name="name" placeholder="Nombre del cliente" className="bg-gray-800 border-gray-600 text-white" />
               {fieldErrors.name && (
-                <p className="text-xs text-red-600 mt-1">{fieldErrors.name}</p>
+                <p className="text-xs text-red-400 mt-1">{fieldErrors.name}</p>
               )}
             </div>
             <div>
-              <label htmlFor="whatsapp" className="block text-sm font-semibold text-gray-800 mb-2">
+              <label htmlFor="whatsapp" className="block text-sm font-semibold text-gray-200 mb-2">
                 WhatsApp
               </label>
-              <Input id="whatsapp" name="whatsapp" placeholder="Número de WhatsApp" className="bg-gray-50 border-gray-300" />
+              <Input id="whatsapp" name="whatsapp" placeholder="Número de WhatsApp" className="bg-gray-800 border-gray-600 text-white" />
               {fieldErrors.whatsapp && (
-                <p className="text-xs text-red-600 mt-1">{fieldErrors.whatsapp}</p>
+                <p className="text-xs text-red-400 mt-1">{fieldErrors.whatsapp}</p>
               )}
             </div>
             <div>
-              <label htmlFor="amount" className="block text-sm font-semibold text-gray-800 mb-2">
+              <label htmlFor="amount" className="block text-sm font-semibold text-gray-200 mb-2">
                 Monto Mensual
               </label>
-              <Input id="amount" name="amount" type="number" placeholder="Monto" className="bg-gray-50 border-gray-300" />
+              <Input id="amount" name="amount" type="number" placeholder="Monto" className="bg-gray-800 border-gray-600 text-white" />
               {fieldErrors.amount && (
-                <p className="text-xs text-red-600 mt-1">{fieldErrors.amount}</p>
+                <p className="text-xs text-red-400 mt-1">{fieldErrors.amount}</p>
               )}
             </div>
             <div>
-              <label htmlFor="entryDate" className="block text-sm font-semibold text-gray-800 mb-2">
+              <label htmlFor="entryDate" className="block text-sm font-semibold text-gray-200 mb-2">
                 Fecha de Entrada
               </label>
-              <Input id="entryDate" name="entryDate" type="date" className="bg-gray-50 border-gray-300" />
+              <Input id="entryDate" name="entryDate" type="date" className="bg-gray-800 border-gray-600 text-white" />
               {fieldErrors.entryDate && (
-                <p className="text-xs text-red-600 mt-1">{fieldErrors.entryDate}</p>
+                <p className="text-xs text-red-400 mt-1">{fieldErrors.entryDate}</p>
               )}
             </div>
             <div>
-              <label htmlFor="observations" className="block text-sm font-semibold text-gray-800 mb-2">
+              <label htmlFor="observations" className="block text-sm font-semibold text-gray-200 mb-2">
                 Observaciones
               </label>
-              <Input id="observations" name="observations" placeholder="Observaciones" className="bg-gray-50 border-gray-300" />
+              <Input id="observations" name="observations" placeholder="Observaciones" className="bg-gray-800 border-gray-600 text-white" />
             </div>
             {error && (
-              <div className="text-sm text-red-700 bg-red-50 p-3 rounded border border-red-200">
+              <div className="text-sm text-red-400 bg-red-950 p-3 rounded border border-red-700">
                 {error}
               </div>
             )}
@@ -191,7 +191,7 @@ function DataTable<TData, TValue>({
                 type="button"
                 onClick={() => setOpen(false)}
                 disabled={loading}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors font-medium disabled:opacity-50"
+                className="px-4 py-2 text-gray-200 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors font-medium disabled:opacity-50"
               >
                 Cancelar
               </button>
@@ -419,8 +419,8 @@ export default function CustomerPage() {
   if (error) {
     return (
       <AppShell title="Clientes">
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <p className="text-red-600">Error: {error}</p>
+        <div className="bg-red-950 border border-red-700 rounded-md p-4">
+          <p className="text-red-400">Error: {error}</p>
         </div>
       </AppShell>
     )
@@ -434,10 +434,10 @@ export default function CustomerPage() {
         columns={createColumns(handleDeleteClient, sortOrder, sortByDate)}
         data={clients}
       />
-      <div className="mt-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-        <p className="text-lg font-semibold text-gray-900">
+      <div className="mt-8 p-6 bg-gradient-to-r from-green-950 to-emerald-950 rounded-lg border border-green-700">
+        <p className="text-lg font-semibold text-gray-200">
           Total ganado:
-          <span className="ml-2 text-2xl font-bold text-green-700">${totalAmount.toLocaleString()}</span>
+          <span className="ml-2 text-2xl font-bold text-green-400">${totalAmount.toLocaleString()}</span>
         </p>
       </div>
     </AppShell>
