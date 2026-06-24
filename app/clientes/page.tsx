@@ -33,6 +33,7 @@ interface ClientFormData {
   whatsapp: string
   amount: string
   observations: string
+  entryDate: string
 }
 
 function DataTable<TData, TValue>({
@@ -59,6 +60,7 @@ function DataTable<TData, TValue>({
       name: formData.get('name') as string,
       whatsapp: formData.get('whatsapp') as string,
       amount: formData.get('amount') as string,
+       entryDate: formData.get('entryDate') as string,
       observations: formData.get('observations') as string,
     }
 
@@ -103,6 +105,9 @@ function DataTable<TData, TValue>({
             <div>
               <label htmlFor="amount" className="block text-sm font-medium mb-1">
                 Monto
+              </label>
+               <label htmlFor="entryDate" className="block text-sm font-medium mb-1">
+                Fecha de Entrada
               </label>
               <Input id="amount" name="amount" type="number" placeholder="Monto" />
             </div>
@@ -205,6 +210,10 @@ const columns: ColumnDef<User>[] = [
   {
     accessorKey: "entryDate",
     header: "Fecha de Entrada",
+  },
+    {
+    accessorKey: "lastEntryDate",
+    header: "Ultimo pago",
   },
   {
     accessorKey: "state",
