@@ -268,6 +268,14 @@ const createColumns = (
   },
   {
     accessorKey: "entryDate",
+    header: "Fecha de Entrada",
+    cell: ({ row }) => {
+      const date = new Date(row.getValue("entryDate") as string)
+      return date.toLocaleDateString()
+    },
+  },
+  {
+    accessorKey: "dueDate",
     header: ({ column }) => (
       <button
         onClick={() => {
@@ -281,20 +289,12 @@ const createColumns = (
         }}
         className="flex items-center gap-2 cursor-pointer hover:text-gray-700"
       >
-        Fecha de Entrada
+        Fecha de Vencimiento
         <span className="text-xs">
           {sortOrder === 'asc' ? '↑' : sortOrder === 'desc' ? '↓' : '↕'}
         </span>
       </button>
     ),
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("entryDate") as string)
-      return date.toLocaleDateString()
-    },
-  },
-  {
-    accessorKey: "dueDate",
-    header: "Fecha de Vencimiento",
     cell: ({ row }) => {
       const date = new Date(row.getValue("dueDate") as string)
       return date.toLocaleDateString()
@@ -327,8 +327,8 @@ export default function CustomerPage() {
     }
 
     const sorted = [...clients].sort((a, b) => {
-      const dateA = new Date(a.entryDate).getTime()
-      const dateB = new Date(b.entryDate).getTime()
+      const dateA = new Date(a.dueDate).getTime()
+      const dateB = new Date(b.dueDate).getTime()
       return order === 'asc' ? dateA - dateB : dateB - dateA
     })
     setClients(sorted)
