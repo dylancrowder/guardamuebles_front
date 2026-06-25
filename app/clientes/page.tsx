@@ -238,7 +238,6 @@ interface Client {
   name: string
   whatsapp: string
   entryDate: string
-  dueDate: string
   amount: number
   observations: string
   createdAt: string
@@ -326,19 +325,7 @@ export default function CustomerPage() {
   const [error, setError] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null)
 
-  const sortByDate = (order: 'asc' | 'desc' | null) => {
-    setSortOrder(order)
-    if (order === null) {
-      return
-    }
-
-    const sorted = [...clients].sort((a, b) => {
-      const dateA = new Date(a.dueDate).getTime()
-      const dateB = new Date(b.dueDate).getTime()
-      return order === 'asc' ? dateA - dateB : dateB - dateA
-    })
-    setClients(sorted)
-  }
+ 
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -398,12 +385,14 @@ export default function CustomerPage() {
     })
   }
 
+  const columns = createColumns(handleDeleteClient, sortOrder, setSortOrder)
+
   const totalAmount = Array.isArray(clients) ? clients.reduce((sum, client) => sum + client.amount, 0) : 0
 
   return (
     <AppShell title="Clientes">
       <DataTable
-        columns={createColumns(handleDeleteClient, sortOrder, sortByDate)}
+        columns={columns}
         data={clients}
         onAddClient={(newClient) => setClients([...clients, newClient])}
       />
