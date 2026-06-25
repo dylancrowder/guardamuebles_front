@@ -14,11 +14,31 @@ import { AppShell } from "@/components/app-shell";
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api-client";
 import { useParams } from "next/navigation";
+import { ClientPaymentSection } from "@/components/pagos/ClientPaymentSection";
 
 
 export default function ClientDetailsPage() {
 
-
+const mockPayments = [
+  {
+    _id: "1",
+    period: "2026-06",
+    amount: 70000,
+    paymentDate: "2026-06-20",
+  },
+  {
+    _id: "2",
+    period: "2026-05",
+    amount: 70000,
+    paymentDate: "2026-05-20",
+  },
+  {
+    _id: "3",
+    period: "2026-04",
+    amount: 70000,
+    paymentDate: "2026-04-20",
+  },
+];
 
 
   const params = useParams();
@@ -124,14 +144,14 @@ export default function ClientDetailsPage() {
               <div>
                 <Label>Último pago</Label>
                 <p className="mt-1 text-sm text-muted-foreground">
-                trabajar aca tambien
+                  trabajar aca tambien
                 </p>
               </div>
 
               <div className="md:col-span-2">
                 <Label>Observaciones</Label>
                 <div className="mt-2 rounded-md border p-3 text-sm text-muted-foreground">
-                {client?.observations || "Sin observaciones"}
+                  {client?.observations || "Sin observaciones"}
                 </div>
               </div>
             </div>
@@ -139,6 +159,8 @@ export default function ClientDetailsPage() {
         </Card>
       </div>
       </>
+      <ClientPaymentSection payments={mockPayments} />
+
     </AppShell>
   )
 }
