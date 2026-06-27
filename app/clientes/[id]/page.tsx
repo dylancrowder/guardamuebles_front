@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +14,7 @@ import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api-client";
 import { useParams } from "next/navigation";
 import { ClientPaymentSection } from "@/components/pagos/ClientPaymentSection";
+import { CreatePaymentForm } from "@/components/pagos/CreatePayment";
 
 
 export default function ClientDetailsPage() {
@@ -59,6 +59,7 @@ const mockPayments = [
 
 
   const [client, setClient] = useState<Client | null>(null)
+  const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -86,11 +87,70 @@ const mockPayments = [
       }
     }
 
+    const fetchAllClients = async () => {
+      try {
+        const response = await apiClient.get(`/api/clients/getClients`);
+        if (!response.error && response.data) {
+          setClients(response.data as Client[])
+        }
+      } catch (err) {
+        console.error('Error al cargar lista de clientes:', err)
+      }
+    }
+
     fetchClients()
+    fetchAllClients()
   }, [])
 
 
 
+
+  const handleCreatePayment = async (
+    clientId: string,
+    body: {
+      amount: number;
+      period: string;
+      paymentDate: string;
+      description: string;
+    }
+  ) => {
+    try {
+      const response = await apiClient.post(`/api/payments/create`, {
+        clientId,
+        ...body,
+      });
+
+      if (response.error) {
+        alert(`Error: ${response.error}`);
+      } else {
+        alert("Pago registrado exitosamente");
+        // Aquí podrías refrescar los pagos si es necesario
+      }
+    } catch (err) {
+      console.error("Error al crear pago:", err);
+      alert("Error al registrar el pago");
+    }
+  };
+
+  const getClientDetail = async (clientId: string) => {
+    const response = await apiClient.get(`/api/clients/getClient/${clientId}`);
+
+    if (response.error || !response.data) {
+      throw new Error(response.error || "Error al obtener detalle del cliente");
+    }
+
+    const clientData = response.data as any;
+
+    return {
+      client: {
+        _id: clientData._id,
+        amount: clientData.amount,
+      },
+      account: {
+        pendingPeriods: clientData.pendingPeriods || [],
+      },
+    };
+  };
 
   return (
     <AppShell title="">
@@ -157,6 +217,14 @@ const mockPayments = [
             </div>
           </CardContent>
         </Card>
+
+        <div className="mt-8">
+          <CreatePaymentForm
+            clients={clients}
+            onSubmit={handleCreatePayment}
+            getClientDetail={getClientDetail}
+          />
+        </div>
       </div>
       </>
       <ClientPaymentSection payments={mockPayments} />
