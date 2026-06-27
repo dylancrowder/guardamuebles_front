@@ -219,11 +219,14 @@ const mockPayments = [
         </Card>
 
         <div className="mt-8">
-          <CreatePaymentForm
-            clients={clients}
-            onSubmit={handleCreatePayment}
-            getClientDetail={getClientDetail}
-          />
+          {client && (
+            <CreatePaymentForm
+              clientId={client._id}
+              clientName={client.name}
+              onSubmit={handleCreatePayment}
+              getClientDetail={getClientDetail}
+            />
+          )}
         </div>
       </div>
       </>
