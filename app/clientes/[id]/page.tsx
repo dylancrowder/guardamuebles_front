@@ -147,7 +147,8 @@ const mockPayments = [
         amount: clientData.amount,
       },
       account: {
-        pendingPeriods: clientData.pendingPeriods || [],
+        pendingPeriods: clientData.account?.pendingPeriods || [],
+        nextDuePeriod: clientData.account?.nextDuePeriod || null,
       },
     };
   };
