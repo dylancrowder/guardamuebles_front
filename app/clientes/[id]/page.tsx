@@ -4,7 +4,11 @@ import { AppShell } from "@/components/app-shell";
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api-client";
 import { useParams } from "next/navigation";
-import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 interface Client {
   _id: string;
@@ -58,33 +62,33 @@ function PaymentCard({
   clientAmount: number;
   onPaymentSuccess?: () => void;
 }) {
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [description, setDescription] = useState(`Pago mensual de ${payment.period}`);
 
   const handlePayment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    const formData = new FormData(e.currentTarget);
     const paymentData = {
       amount: clientAmount,
       period: payment.period,
       paymentDate: new Date().toISOString(),
-      description: formData.get("description") as string,
+      description: description,
     };
 
     try {
       const response = await apiClient.post(
-        `/api/payments/${clientId}`,
+        `/api/payments/addPayment/${clientId}`,
         paymentData
       );
 
       if (response.error) {
         setError(response.error);
       } else {
-        setShowPaymentForm(false);
+        setSheetOpen(false);
         if (onPaymentSuccess) {
           onPaymentSuccess();
         }
@@ -98,119 +102,104 @@ function PaymentCard({
     }
   };
 
+  const isPaid = payment.status === "PAID";
+  const statusColor = isPaid ? "text-green-600" : "text-red-600";
+  const statusText = isPaid ? "Pagado" : "Pendiente";
+
   return (
-    <>
-      <div className="border rounded-lg p-4 mb-4 shadow-sm">
-        <p>
-          <strong>Período:</strong> {payment.period}
-        </p>
-
-        <p>
-          <strong>Estado:</strong>{" "}
-          <span
-            className={`font-semibold ${
-              payment.status === "PAID" ? "text-green-600" : "text-red-600"
-            }`}
-          >
-            {payment.status === "PAID" ? "Pagado" : "Pendiente"}
-          </span>
-        </p>
-
-        {payment.status === "PAID" && (
-          <p>
-            <strong>Fecha de pago:</strong>{" "}
-            {payment.paymentDate
-              ? new Date(payment.paymentDate).toLocaleDateString("es-AR")
-              : "-"}
-          </p>
-        )}
-
-        <p>
-          <strong>Monto:</strong> $
-          {payment.amount.toLocaleString("es-AR")}
-        </p>
-
-        {payment.status === "PENDING" && (
-          <button
-            onClick={() => setShowPaymentForm(true)}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-          >
-            Pagar
-          </button>
-        )}
-      </div>
-
-      {showPaymentForm && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <div className="bg-gray-900 rounded-lg shadow-xl p-6 max-w-md w-full border border-gray-700">
-            <h3 className="text-xl font-bold text-white mb-4">
-              Pagar período {payment.period}
-            </h3>
-            <form onSubmit={handlePayment} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="amount"
-                  className="block text-sm font-semibold text-gray-200 mb-2"
-                >
-                  Monto
-                </label>
-                <div className="bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-white">
-                  ${clientAmount.toLocaleString("es-AR")}
-                </div>
-              </div>
-              <div>
-                <label
-                  htmlFor="period"
-                  className="block text-sm font-semibold text-gray-200 mb-2"
-                >
-                  Período
-                </label>
-                <div className="bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-white">
-                  {payment.period}
-                </div>
-              </div>
-              <div>
-                <label
-                  htmlFor="description"
-                  className="block text-sm font-semibold text-gray-200 mb-2"
-                >
-                  Descripción
-                </label>
-                <input
-                  id="description"
-                  name="description"
-                  placeholder="Ej: Pago mensual de junio 2026"
-                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-                  defaultValue={`Pago mensual de ${payment.period}`}
-                />
-              </div>
-              {error && (
-                <div className="text-sm text-red-400 bg-red-950 p-3 rounded border border-red-700">
-                  {error}
-                </div>
-              )}
-              <div className="flex gap-2 justify-end pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowPaymentForm(false)}
-                  disabled={loading}
-                  className="px-4 py-2 text-gray-200 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors font-medium disabled:opacity-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
-                >
-                  {loading ? "Procesando..." : "Confirmar pago"}
-                </button>
-              </div>
-            </form>
+    <Card className="mb-4">
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-base">Período: {payment.period}</CardTitle>
+            <CardDescription className={`mt-1 ${statusColor}`}>
+              {statusText}
+            </CardDescription>
           </div>
         </div>
-      )}
-    </>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {isPaid && payment.paymentDate && (
+          <p className="text-sm">
+            <strong>Fecha de pago:</strong>{" "}
+            {new Date(payment.paymentDate).toLocaleDateString("es-AR")}
+          </p>
+        )}
+        <p className="text-sm">
+          <strong>Monto:</strong> ${payment.amount.toLocaleString("es-AR")}
+        </p>
+
+        {!isPaid && (
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+            <SheetTrigger asChild>
+              <Button variant="default" className="mt-4 w-full">
+                Pagar
+              </Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>Pagar período {payment.period}</SheetTitle>
+                <SheetDescription>
+                  Ingresa los detalles del pago para completar la transacción.
+                </SheetDescription>
+              </SheetHeader>
+              <form onSubmit={handlePayment} className="space-y-6 mt-6">
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Monto</Label>
+                  <Input
+                    id="amount"
+                    disabled
+                    value={`$${clientAmount.toLocaleString("es-AR")}`}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="period">Período</Label>
+                  <Input
+                    id="period"
+                    disabled
+                    value={payment.period}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Descripción</Label>
+                  <Input
+                    id="description"
+                    placeholder="Descripción del pago"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
+
+                {error && (
+                  <div className="text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900">
+                    {error}
+                  </div>
+                )}
+
+                <div className="flex gap-2 justify-end pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setSheetOpen(false)}
+                    disabled={loading}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                  >
+                    {loading ? "Procesando..." : "Confirmar pago"}
+                  </Button>
+                </div>
+              </form>
+            </SheetContent>
+          </Sheet>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -264,95 +253,120 @@ export default function ClientDetailsPage() {
       {!loading && !error && client && (
         <div className="space-y-8">
           {/* Información del cliente */}
-          <div className="border rounded-lg p-6 shadow-sm">
-            <h1 className="text-3xl font-bold mb-4">
-              {client.client.name}
-            </h1>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-3xl">{client.client.name}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Estado</p>
+                  <p className="font-medium">{client.account.status}</p>
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <p>
-                <strong>Estado:</strong> {client.account.status}
-              </p>
+                <div>
+                  <p className="text-sm text-muted-foreground">WhatsApp</p>
+                  <p className="font-medium">{client.client.whatsapp}</p>
+                </div>
 
-              <p>
-                <strong>WhatsApp:</strong> {client.client.whatsapp}
-              </p>
+                <div>
+                  <p className="text-sm text-muted-foreground">Fecha de ingreso</p>
+                  <p className="font-medium">
+                    {new Date(client.client.entryDate).toLocaleDateString("es-AR")}
+                  </p>
+                </div>
 
-              <p>
-                <strong>Fecha de ingreso:</strong>{" "}
-                {new Date(client.client.entryDate).toLocaleDateString("es-AR")}
-              </p>
+                <div>
+                  <p className="text-sm text-muted-foreground">Mensualidad</p>
+                  <p className="font-medium">
+                    ${client.client.amount.toLocaleString("es-AR")}
+                  </p>
+                </div>
 
-              <p>
-                <strong>Mensualidad:</strong> $
-                {client.client.amount.toLocaleString("es-AR")}
-              </p>
+                <div>
+                  <p className="text-sm text-muted-foreground">Próximo vencimiento</p>
+                  <p className="font-medium">
+                    {new Date(client.account.nextDueDate).toLocaleDateString("es-AR")}
+                  </p>
+                </div>
 
-              <p>
-                <strong>Próximo vencimiento:</strong>{" "}
-                {new Date(
-                  client.account.nextDueDate
-                ).toLocaleDateString("es-AR")}
-              </p>
+                <div>
+                  <p className="text-sm text-muted-foreground">Días restantes</p>
+                  <p className="font-medium">{client.account.daysRemaining}</p>
+                </div>
 
-              <p>
-                <strong>Días restantes:</strong>{" "}
-                {client.account.daysRemaining}
-              </p>
+                <div>
+                  <p className="text-sm text-muted-foreground">Meses adeudados</p>
+                  <p className="font-medium">{client.account.monthsOwed}</p>
+                </div>
 
-              <p>
-                <strong>Meses adeudados:</strong>{" "}
-                {client.account.monthsOwed}
-              </p>
+                <div>
+                  <p className="text-sm text-muted-foreground">Deuda total</p>
+                  <p className="font-medium">
+                    ${client.account.totalDebt.toLocaleString("es-AR")}
+                  </p>
+                </div>
+              </div>
 
-              <p>
-                <strong>Deuda total:</strong> $
-                {client.account.totalDebt.toLocaleString("es-AR")}
-              </p>
-            </div>
-
-            <div className="mt-4">
-              <strong>Observaciones:</strong>
-              <p>{client.client.observations || "-"}</p>
-            </div>
-          </div>
+              {client.client.observations && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Observaciones</p>
+                  <p className="text-sm">{client.client.observations}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Pagos pendientes */}
-          <div className="border rounded-lg p-6 shadow-sm">
+          <div>
             <h2 className="text-2xl font-semibold mb-4 text-red-600">
               Pagos pendientes ({pendingPayments.length})
             </h2>
 
             {pendingPayments.length === 0 ? (
-              <p>No hay pagos pendientes.</p>
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-muted-foreground">No hay pagos pendientes.</p>
+                </CardContent>
+              </Card>
             ) : (
-              pendingPayments.map((payment) => (
-                <PaymentCard
-                  key={payment.period}
-                  payment={payment}
-                  clientId={client.client._id}
-                  clientAmount={client.client.amount}
-                  onPaymentSuccess={fetchClient}
-                />
-              ))
+              <div className="space-y-4">
+                {pendingPayments.map((payment) => (
+                  <PaymentCard
+                    key={payment.period}
+                    payment={payment}
+                    clientId={client.client._id}
+                    clientAmount={client.client.amount}
+                    onPaymentSuccess={fetchClient}
+                  />
+                ))}
+              </div>
             )}
           </div>
 
           {/* Pagos realizados */}
-          <div className="border rounded-lg p-6 shadow-sm">
+          <div>
             <h2 className="text-2xl font-semibold mb-4 text-green-600">
               Pagos realizados ({paidPayments.length})
             </h2>
 
             {paidPayments.length === 0 ? (
-              <p>No hay pagos registrados.</p>
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-muted-foreground">No hay pagos registrados.</p>
+                </CardContent>
+              </Card>
             ) : (
-              paidPayments.map((payment) => (
-                <PaymentCard
-                  key={payment.period}
-                  payment={payment}
-                />
-              ))
+              <div className="space-y-4">
+                {paidPayments.map((payment) => (
+                  <PaymentCard
+                    key={payment.period}
+                    payment={payment}
+                    clientId={client.client._id}
+                    clientAmount={client.client.amount}
+                  />
+                ))}
+              </div>
             )}
           </div>
         </div>
