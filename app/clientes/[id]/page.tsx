@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface Client {
   _id: string;
@@ -62,7 +62,7 @@ function PaymentCard({
   clientAmount: number;
   onPaymentSuccess?: () => void;
 }) {
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [description, setDescription] = useState(`Pago mensual de ${payment.period}`);
@@ -88,7 +88,7 @@ function PaymentCard({
       if (response.error) {
         setError(response.error);
       } else {
-        setSheetOpen(false);
+        setDialogOpen(false);
         if (onPaymentSuccess) {
           onPaymentSuccess();
         }
@@ -116,6 +116,75 @@ function PaymentCard({
               {statusText}
             </CardDescription>
           </div>
+          {!isPaid && (
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="default" size="sm">
+                  Pagar
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Pagar período {payment.period}</DialogTitle>
+                  <DialogDescription>
+                    Ingresa los detalles del pago para completar la transacción.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handlePayment} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="amount">Monto</Label>
+                    <Input
+                      id="amount"
+                      disabled
+                      value={`$${clientAmount.toLocaleString("es-AR")}`}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="period">Período</Label>
+                    <Input
+                      id="period"
+                      disabled
+                      value={payment.period}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Descripción</Label>
+                    <Input
+                      id="description"
+                      placeholder="Descripción del pago"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                    />
+                  </div>
+
+                  {error && (
+                    <div className="text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900">
+                      {error}
+                    </div>
+                  )}
+
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setDialogOpen(false)}
+                      disabled={loading}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                    >
+                      {loading ? "Procesando..." : "Confirmar pago"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -128,76 +197,6 @@ function PaymentCard({
         <p className="text-sm">
           <strong>Monto:</strong> ${payment.amount.toLocaleString("es-AR")}
         </p>
-
-        {!isPaid && (
-          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            <SheetTrigger asChild>
-              <Button variant="default" className="mt-4 w-full">
-                Pagar
-              </Button>
-            </SheetTrigger>
-            <SheetContent>
-              <SheetHeader>
-                <SheetTitle>Pagar período {payment.period}</SheetTitle>
-                <SheetDescription>
-                  Ingresa los detalles del pago para completar la transacción.
-                </SheetDescription>
-              </SheetHeader>
-              <form onSubmit={handlePayment} className="space-y-6 mt-6">
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Monto</Label>
-                  <Input
-                    id="amount"
-                    disabled
-                    value={`$${clientAmount.toLocaleString("es-AR")}`}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="period">Período</Label>
-                  <Input
-                    id="period"
-                    disabled
-                    value={payment.period}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Descripción</Label>
-                  <Input
-                    id="description"
-                    placeholder="Descripción del pago"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                  />
-                </div>
-
-                {error && (
-                  <div className="text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900">
-                    {error}
-                  </div>
-                )}
-
-                <div className="flex gap-2 justify-end pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setSheetOpen(false)}
-                    disabled={loading}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                  >
-                    {loading ? "Procesando..." : "Confirmar pago"}
-                  </Button>
-                </div>
-              </form>
-            </SheetContent>
-          </Sheet>
-        )}
       </CardContent>
     </Card>
   );
