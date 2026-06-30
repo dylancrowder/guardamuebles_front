@@ -200,7 +200,21 @@ function PaymentCard({
       </CardContent>
     </Card>
   );
+
+
 }
+
+
+const formatUtcDate = (date: string) => {
+  const d = new Date(date);
+
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const year = d.getUTCFullYear();
+
+  return `${day}/${month}/${year}`;
+};
+
 
 export default function ClientDetailsPage() {
   const params = useParams();
@@ -285,7 +299,7 @@ export default function ClientDetailsPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Próximo vencimiento</p>
                   <p className="font-medium">
-                    {new Date(client.account.nextDueDate).toLocaleDateString("es-AR")}
+                    {formatUtcDate(client.account.nextDueDate)}
                   </p>
                 </div>
 
