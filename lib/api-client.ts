@@ -36,19 +36,8 @@ class ApiClient {
       const data = await response.json()
 
       if (!response.ok) {
-        let errorMessage = 'Error en la petición'
-        if (typeof data === 'string') {
-          errorMessage = data
-        } else if (data?.message) {
-          errorMessage = data.message
-        } else if (data?.error) {
-          errorMessage = data.error
-        } else if (data?.errors) {
-          errorMessage = typeof data.errors === 'string' ? data.errors : JSON.stringify(data.errors)
-        }
-
         return {
-          error: errorMessage,
+          error: data.message || 'Error en la petición',
           status: response.status,
         }
       }
