@@ -449,6 +449,18 @@ export default function ClientDetailsPage() {
 
   return (
     <AppShell title="Detalle del Cliente">
+      <div className="mb-4">
+        <a
+          href="/clientes"
+          className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-200 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          Volver a clientes
+        </a>
+      </div>
       {!loading && !error && client && (
         <div className="space-y-8">
           {/* Información del cliente */}
@@ -471,12 +483,10 @@ export default function ClientDetailsPage() {
                   <p className="font-medium text-gray-100">{client.client.whatsapp}</p>
                 </div>
 
-                {client.client.box && (
-                  <div>
-                    <p className="text-sm text-gray-400">Box</p>
-                    <p className="font-medium text-gray-100">{client.client.box}</p>
-                  </div>
-                )}
+                <div>
+                  <p className="text-sm text-gray-400">Box</p>
+                  <p className="font-medium text-gray-100">{client.client.box || '-'}</p>
+                </div>
 
                 <div>
                   <p className="text-sm text-gray-400">Fecha de ingreso</p>
