@@ -21,6 +21,7 @@ interface Client {
   createdAt: string;
   updatedAt: string;
   __v: number;
+  box?: string;
 }
 
 type AccountStatus = "CURRENT" | "PENDING" | "OVERDUE";
@@ -216,6 +217,141 @@ const formatUtcDate = (date: string) => {
   return `${day}/${month}/${year}`;
 };
 
+function EditClientDialog({ client, onUpdate }: { client: Client; onUpdate: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: client.name,
+    whatsapp: client.whatsapp,
+    amount: client.amount,
+    entryDate: client.entryDate.split('T')[0],
+    observations: client.observations || '',
+    box: client.box || '',
+  });
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const updateData = {
+        name: formData.name,
+        whatsapp: formData.whatsapp,
+        amount: formData.amount,
+        entryDate: new Date(formData.entryDate).toISOString(),
+        observations: formData.observations,
+        box: formData.box,
+      };
+
+      const response = await apiClient.put(`/api/clients/${client._id}`, updateData);
+
+      if (response.error) {
+        setError(response.error);
+      } else {
+        setOpen(false);
+        onUpdate();
+      }
+    } catch (err) {
+      setError('Error al actualizar el cliente');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          Editar
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar cliente</DialogTitle>
+          <DialogDescription>
+            Actualiza los datos del cliente. Haz clic en guardar cuando termines.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Nombre</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="whatsapp">WhatsApp</Label>
+            <Input
+              id="whatsapp"
+              value={formData.whatsapp}
+              onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="box">Box</Label>
+            <Input
+              id="box"
+              value={formData.box}
+              onChange={(e) => setFormData({ ...formData, box: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="amount">Monto Mensual</Label>
+            <Input
+              id="amount"
+              type="number"
+              value={formData.amount}
+              onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="entryDate">Fecha de Entrada</Label>
+            <Input
+              id="entryDate"
+              type="date"
+              value={formData.entryDate}
+              onChange={(e) => setFormData({ ...formData, entryDate: e.target.value })}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="observations">Observaciones</Label>
+            <Input
+              id="observations"
+              value={formData.observations}
+              onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
+            />
+          </div>
+          {error && (
+            <div className="text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900">
+              {error}
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Guardando...' : 'Guardar cambios'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function ClientDetailsPage() {
   const params = useParams();
@@ -269,7 +405,10 @@ export default function ClientDetailsPage() {
           {/* Información del cliente */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-3xl">{client.client.name}</CardTitle>
+              <div className="flex items-start justify-between">
+                <CardTitle className="text-3xl">{client.client.name}</CardTitle>
+                <EditClientDialog client={client.client} onUpdate={fetchClient} />
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -282,6 +421,13 @@ export default function ClientDetailsPage() {
                   <p className="text-sm text-muted-foreground">WhatsApp</p>
                   <p className="font-medium">{client.client.whatsapp}</p>
                 </div>
+
+                {client.client.box && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Box</p>
+                    <p className="font-medium">{client.client.box}</p>
+                  </div>
+                )}
 
                 <div>
                   <p className="text-sm text-muted-foreground">Fecha de ingreso</p>

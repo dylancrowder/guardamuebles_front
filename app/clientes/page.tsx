@@ -30,6 +30,7 @@ const clientFormSchema = z.object({
   amount: z.number().positive("El monto debe ser un número positivo"),
   observations: z.string().optional().default(""),
   entryDate: z.string().min(1, "La fecha de entrada es requerida"),
+  box: z.string().min(1, "El box es requerido"),
 })
 
 type ClientFormData = z.infer<typeof clientFormSchema>
@@ -75,6 +76,7 @@ function DataTable<TData, TValue>({
       amount: formData.get('amount') ? parseFloat(formData.get('amount') as string) : 0,
       entryDate: formData.get('entryDate') as string,
       observations: formData.get('observations') as string,
+      box: formData.get('box') as string,
     }
 
     const result = clientFormSchema.safeParse(formDataObj)
@@ -167,6 +169,18 @@ function DataTable<TData, TValue>({
                 Observaciones
               </label>
               <Input id="observations" name="observations" placeholder="Observaciones" className="bg-gray-800 border-gray-600 text-white" />
+              {fieldErrors.observations && (
+                <p className="text-xs text-red-400 mt-1">{fieldErrors.observations}</p>
+              )}
+            </div>
+            <div>
+              <label htmlFor="box" className="block text-sm font-semibold text-gray-200 mb-2">
+                Box
+              </label>
+              <Input id="box" name="box" placeholder="Número de box" className="bg-gray-800 border-gray-600 text-white" />
+              {fieldErrors.box && (
+                <p className="text-xs text-red-400 mt-1">{fieldErrors.box}</p>
+              )}
             </div>
             {error && (
               <div className="text-sm text-red-400 bg-red-950 p-3 rounded border border-red-700">
@@ -268,6 +282,7 @@ interface Client {
   daysRemaining?: number
   nextDueDate?: string
   monthsOwed?: number
+  box?: string
 }
 
 const createColumns = (
@@ -280,6 +295,10 @@ const createColumns = (
   {
     accessorKey: "whatsapp",
     header: "Whatsapp",
+  },
+  {
+    accessorKey: "box",
+    header: "Box",
   },
   {
     accessorKey: "amount",
