@@ -7,6 +7,8 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
+  SortingState,
+  getSortedRowModel,
 } from "@tanstack/react-table"
 
 import {
@@ -43,10 +45,17 @@ function DataTable<TData, TValue>({
   data,
   onAddClient,
 }: DataTableProps<TData, TValue>) {
+  const [sorting, setSorting] = useState<SortingState>([])
+  
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    state: {
+      sorting,
+    },
   })
 
   const [open, setOpen] = useState(false)
@@ -193,13 +202,23 @@ function DataTable<TData, TValue>({
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
                 return (
-                  <TableHead key={header.id}>
+                  <TableHead 
+                    key={header.id}
+                    className={header.column.getCanSort() ? "cursor-pointer hover:bg-gray-800" : ""}
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
                         header.column.columnDef.header,
                         header.getContext()
                       )}
+                    {header.column.getIsSorted() === 'asc' && (
+                      <span className="ml-2">↑</span>
+                    )}
+                    {header.column.getIsSorted() === 'desc' && (
+                      <span className="ml-2">↓</span>
+                    )}
                   </TableHead>
                 )
               })}
@@ -233,6 +252,8 @@ function DataTable<TData, TValue>({
   </>)
 }
 
+
+
 interface Client {
   _id: string
   name: string
@@ -244,12 +265,13 @@ interface Client {
   updatedAt: string
   __v: number
   estado?: string
+  daysRemaining?: number
+  nextDueDate?: string
+  monthsOwed?: number
 }
 
 const createColumns = (
-  onDelete: (id: string) => void,
-  sortOrder: 'asc' | 'desc' | null,
-  onSort: (order: 'asc' | 'desc' | null) => void
+  onDelete: (id: string) => void
 ): ColumnDef<Client>[] => [
   {
     accessorKey: "name",
@@ -272,31 +294,47 @@ const createColumns = (
     },
   },
   {
-    accessorKey: "dueDate",
-    header: ({ column }) => (
-      <button
-        onClick={() => {
-          if (sortOrder === 'asc') {
-            onSort('desc')
-          } else if (sortOrder === 'desc') {
-            onSort(null)
-          } else {
-            onSort('asc')
-          }
-        }}
-        className="flex items-center gap-2 cursor-pointer hover:text-gray-700"
-      >
-        Fecha de Vencimiento
-        <span className="text-xs">
-          {sortOrder === 'asc' ? '↑' : sortOrder === 'desc' ? '↓' : '↕'}
-        </span>
-      </button>
-    ),
+    accessorKey: "daysRemaining",
+    header: "Días Restantes",
     cell: ({ row }) => {
-      const date = new Date(row.getValue("dueDate") as string)
-      return date.toLocaleDateString()
+      const days = row.getValue("daysRemaining") as number
+      return days !== undefined ? days : '-'
+    },
+    enableSorting: true,
+    sortingFn: (rowA, rowB) => {
+      const daysA = rowA.getValue("daysRemaining") as number
+      const daysB = rowB.getValue("daysRemaining") as number
+      if (daysA === undefined) return 1
+      if (daysB === undefined) return -1
+      return daysA - daysB
     },
   },
+  {
+    accessorKey: "nextDueDate",
+    header: "Próximo Vencimiento",
+    cell: ({ row }) => {
+      const date = row.getValue("nextDueDate") as string
+      if (!date) return '-'
+      return new Date(date).toLocaleDateString()
+    },
+    enableSorting: true,
+    sortingFn: (rowA, rowB) => {
+      const dateA = rowA.getValue("nextDueDate") as string
+      const dateB = rowB.getValue("nextDueDate") as string
+      if (!dateA) return 1
+      if (!dateB) return -1
+      return new Date(dateA).getTime() - new Date(dateB).getTime()
+    },
+  },
+  {
+    accessorKey: "monthsOwed",
+    header: "Meses Deudores",
+    cell: ({ row }) => {
+      const months = row.getValue("monthsOwed") as number
+      return months !== undefined ? months : '-'
+    },
+  },
+
   {
     accessorKey: "actions",
     header: "Acciones",
@@ -323,7 +361,6 @@ export default function CustomerPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null)
 
  
 
@@ -331,7 +368,7 @@ export default function CustomerPage() {
     const fetchClients = async () => {
       try {
         setLoading(true)
-        const response = await apiClient.get('/api/clients')
+        const response = await apiClient.get('/api/clients/getAllInfo')
         console.log('Response from API:', response)
         if (response.error) {
           setError(response.error)
@@ -385,7 +422,7 @@ export default function CustomerPage() {
     })
   }
 
-  const columns = createColumns(handleDeleteClient, sortOrder, setSortOrder)
+  const columns = createColumns(handleDeleteClient)
 
   const totalAmount = Array.isArray(clients) ? clients.reduce((sum, client) => sum + client.amount, 0) : 0
 
