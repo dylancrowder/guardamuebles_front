@@ -105,80 +105,90 @@ function PaymentCard({
   };
 
   const isPaid = payment.status === "PAID";
-  const statusColor = isPaid ? "text-green-600" : "text-red-600";
+  const statusColor = isPaid ? "text-green-400" : "text-red-400";
   const statusText = isPaid ? "Pagado" : "Pendiente";
 
   return (
-    <Card className="mb-4">
+    <Card className="mb-4 border-gray-700 bg-gray-900">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-base">Período: {payment.period}</CardTitle>
-            <CardDescription className={`mt-1 ${statusColor}`}>
+            <h3 className="text-base font-semibold text-white">Período: {payment.period}</h3>
+            <p className={`mt-1 text-sm ${statusColor}`}>
               {statusText}
-            </CardDescription>
+            </p>
           </div>
           {!isPaid && (
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="default" size="sm">
+                <Button variant="default" size="sm" className="bg-green-600 hover:bg-green-700 text-white">
                   Pagar
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="bg-gray-900 border-gray-700">
                 <DialogHeader>
-                  <DialogTitle>Pagar período {payment.period}</DialogTitle>
-                  <DialogDescription>
+                  <DialogTitle className="text-white">Pagar período {payment.period}</DialogTitle>
+                  <DialogDescription className="text-gray-400">
                     Ingresa los detalles del pago para completar la transacción.
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handlePayment} className="space-y-6">
+                <form onSubmit={handlePayment} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="amount">Monto</Label>
+                    <Label htmlFor="amount" className="text-gray-300">Monto</Label>
                     <Input
                       id="amount"
                       disabled
-                      value={`$${clientAmount.toLocaleString("es-AR")}`}
+                      value={`$${clientAmount.toLocaleString()}`}
+                      className="bg-gray-800 border-gray-600 text-white"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="period">Período</Label>
+                    <Label htmlFor="period" className="text-gray-300">Período</Label>
                     <Input
                       id="period"
                       disabled
                       value={payment.period}
+                      className="bg-gray-800 border-gray-600 text-white"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="description">Descripción</Label>
+                    <Label htmlFor="description" className="text-gray-300">Descripción</Label>
                     <Input
                       id="description"
                       placeholder="Descripción del pago"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
+                      className="bg-gray-800 border-gray-600 text-white"
                     />
                   </div>
 
                   {error && (
-                    <div className="text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900">
+                    <div className="text-sm text-red-400 bg-red-950/30 p-4 rounded-lg border border-red-800 flex items-start gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                      </svg>
                       {error}
                     </div>
                   )}
 
-                  <DialogFooter>
+                  <DialogFooter className="pt-4 border-t border-gray-700">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => setDialogOpen(false)}
                       disabled={loading}
+                      className="text-gray-300 bg-gray-800 border-gray-600 hover:bg-gray-700"
                     >
                       Cancelar
                     </Button>
                     <Button
                       type="submit"
                       disabled={loading}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       {loading ? "Procesando..." : "Confirmar pago"}
                     </Button>
@@ -189,15 +199,15 @@ function PaymentCard({
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-3">
         {isPaid && payment.paymentDate && (
-          <p className="text-sm">
-            <strong>Fecha de pago:</strong>{" "}
-            {new Date(payment.paymentDate).toLocaleDateString("es-AR")}
+          <p className="text-sm text-gray-300">
+            <strong className="text-gray-100">Fecha de pago:</strong>{" "}
+            {new Date(payment.paymentDate).toLocaleDateString()}
           </p>
         )}
-        <p className="text-sm">
-          <strong>Monto:</strong> ${payment.amount.toLocaleString("es-AR")}
+        <p className="text-sm text-gray-300">
+          <strong className="text-gray-100">Monto:</strong> ${payment.amount.toLocaleString()}
         </p>
       </CardContent>
     </Card>
@@ -263,87 +273,101 @@ function EditClientDialog({ client, onUpdate }: { client: Client; onUpdate: () =
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" className="text-gray-300 bg-gray-800 border-gray-600 hover:bg-gray-700">
           Editar
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="bg-gray-900 border-gray-700">
         <DialogHeader>
-          <DialogTitle>Editar cliente</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-white">Editar cliente</DialogTitle>
+          <DialogDescription className="text-gray-400">
             Actualiza los datos del cliente. Haz clic en guardar cuando termines.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nombre</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="whatsapp">WhatsApp</Label>
-            <Input
-              id="whatsapp"
-              value={formData.whatsapp}
-              onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="box">Box</Label>
-            <Input
-              id="box"
-              value={formData.box}
-              onChange={(e) => setFormData({ ...formData, box: e.target.value })}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="amount">Monto Mensual</Label>
-            <Input
-              id="amount"
-              type="number"
-              value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="entryDate">Fecha de Entrada</Label>
-            <Input
-              id="entryDate"
-              type="date"
-              value={formData.entryDate}
-              onChange={(e) => setFormData({ ...formData, entryDate: e.target.value })}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="observations">Observaciones</Label>
-            <Input
-              id="observations"
-              value={formData.observations}
-              onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <Label htmlFor="name" className="text-gray-300">Nombre</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+                className="bg-gray-800 border-gray-600 text-white"
+              />
+            </div>
+            <div>
+              <Label htmlFor="whatsapp" className="text-gray-300">WhatsApp</Label>
+              <Input
+                id="whatsapp"
+                value={formData.whatsapp}
+                onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                required
+                className="bg-gray-800 border-gray-600 text-white"
+              />
+            </div>
+            <div>
+              <Label htmlFor="box" className="text-gray-300">Box</Label>
+              <Input
+                id="box"
+                value={formData.box}
+                onChange={(e) => setFormData({ ...formData, box: e.target.value })}
+                className="bg-gray-800 border-gray-600 text-white"
+              />
+            </div>
+            <div>
+              <Label htmlFor="amount" className="text-gray-300">Monto Mensual</Label>
+              <Input
+                id="amount"
+                type="number"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                required
+                className="bg-gray-800 border-gray-600 text-white"
+              />
+            </div>
+            <div>
+              <Label htmlFor="entryDate" className="text-gray-300">Fecha de Entrada</Label>
+              <Input
+                id="entryDate"
+                type="date"
+                value={formData.entryDate}
+                onChange={(e) => setFormData({ ...formData, entryDate: e.target.value })}
+                required
+                className="bg-gray-800 border-gray-600 text-white"
+              />
+            </div>
+            <div className="col-span-2">
+              <Label htmlFor="observations" className="text-gray-300">Observaciones</Label>
+              <Input
+                id="observations"
+                value={formData.observations}
+                onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
+                className="bg-gray-800 border-gray-600 text-white"
+              />
+            </div>
           </div>
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900">
+            <div className="text-sm text-red-400 bg-red-950/30 p-4 rounded-lg border border-red-800 flex items-start gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
               {error}
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="pt-4 border-t border-gray-700">
             <Button
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
               disabled={loading}
+              className="text-gray-300 bg-gray-800 border-gray-600 hover:bg-gray-700"
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white">
               {loading ? 'Guardando...' : 'Guardar cambios'}
             </Button>
           </DialogFooter>
@@ -394,84 +418,109 @@ export default function ClientDetailsPage() {
   const paidPayments =
     client?.history.filter((payment) => payment.status === "PAID") ?? [];
 
+  if (loading) {
+    return (
+      <AppShell title="Detalle del Cliente">
+        <div className="flex flex-col justify-center items-center h-64 gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p className="text-gray-400 text-sm">Cargando cliente...</p>
+        </div>
+      </AppShell>
+    )
+  }
+
+  if (error) {
+    return (
+      <AppShell title="Detalle del Cliente">
+        <div className="bg-red-950/30 border border-red-800 rounded-lg p-4 flex items-start gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400 flex-shrink-0 mt-0.5">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <div>
+            <p className="text-red-400 font-medium">Error</p>
+            <p className="text-red-400 text-sm mt-1">{error}</p>
+          </div>
+        </div>
+      </AppShell>
+    )
+  }
+
   return (
     <AppShell title="Detalle del Cliente">
-      {loading && <p>Cargando...</p>}
-
-      {error && <p className="text-red-600">{error}</p>}
-
       {!loading && !error && client && (
         <div className="space-y-8">
           {/* Información del cliente */}
-          <Card>
+          <Card className="border-gray-700 bg-gray-900">
             <CardHeader>
               <div className="flex items-start justify-between">
-                <CardTitle className="text-3xl">{client.client.name}</CardTitle>
+                <h1 className="text-3xl font-bold text-white">{client.client.name}</h1>
                 <EditClientDialog client={client.client} onUpdate={fetchClient} />
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Estado</p>
-                  <p className="font-medium">{client.account.status}</p>
+                  <p className="text-sm text-gray-400">Estado</p>
+                  <p className="font-medium text-gray-100">{client.account.status}</p>
                 </div>
 
                 <div>
-                  <p className="text-sm text-muted-foreground">WhatsApp</p>
-                  <p className="font-medium">{client.client.whatsapp}</p>
+                  <p className="text-sm text-gray-400">WhatsApp</p>
+                  <p className="font-medium text-gray-100">{client.client.whatsapp}</p>
                 </div>
 
                 {client.client.box && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Box</p>
-                    <p className="font-medium">{client.client.box}</p>
+                    <p className="text-sm text-gray-400">Box</p>
+                    <p className="font-medium text-gray-100">{client.client.box}</p>
                   </div>
                 )}
 
                 <div>
-                  <p className="text-sm text-muted-foreground">Fecha de ingreso</p>
-                  <p className="font-medium">
-                    {new Date(client.client.entryDate).toLocaleDateString("es-AR")}
+                  <p className="text-sm text-gray-400">Fecha de ingreso</p>
+                  <p className="font-medium text-gray-100">
+                    {new Date(client.client.entryDate).toLocaleDateString()}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-sm text-muted-foreground">Mensualidad</p>
-                  <p className="font-medium">
-                    ${client.client.amount.toLocaleString("es-AR")}
+                  <p className="text-sm text-gray-400">Mensualidad</p>
+                  <p className="font-medium text-gray-100">
+                    ${client.client.amount.toLocaleString()}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-sm text-muted-foreground">Próximo vencimiento</p>
-                  <p className="font-medium">
+                  <p className="text-sm text-gray-400">Próximo vencimiento</p>
+                  <p className="font-medium text-gray-100">
                     {formatUtcDate(client.account.nextDueDate)}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-sm text-muted-foreground">Días restantes</p>
-                  <p className="font-medium">{client.account.daysRemaining}</p>
+                  <p className="text-sm text-gray-400">Días restantes</p>
+                  <p className="font-medium text-gray-100">{client.account.daysRemaining}</p>
                 </div>
 
                 <div>
-                  <p className="text-sm text-muted-foreground">Meses adeudados</p>
-                  <p className="font-medium">{client.account.monthsOwed}</p>
+                  <p className="text-sm text-gray-400">Meses adeudados</p>
+                  <p className="font-medium text-gray-100">{client.account.monthsOwed}</p>
                 </div>
 
                 <div>
-                  <p className="text-sm text-muted-foreground">Deuda total</p>
-                  <p className="font-medium">
-                    ${client.account.totalDebt.toLocaleString("es-AR")}
+                  <p className="text-sm text-gray-400">Deuda total</p>
+                  <p className="font-medium text-gray-100">
+                    ${client.account.totalDebt.toLocaleString()}
                   </p>
                 </div>
               </div>
 
               {client.client.observations && (
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Observaciones</p>
-                  <p className="text-sm">{client.client.observations}</p>
+                  <p className="text-sm text-gray-400 mb-1">Observaciones</p>
+                  <p className="text-sm text-gray-300">{client.client.observations}</p>
                 </div>
               )}
             </CardContent>
@@ -479,14 +528,19 @@ export default function ClientDetailsPage() {
 
           {/* Pagos pendientes */}
           <div>
-            <h2 className="text-2xl font-semibold mb-4 text-red-600">
+            <h2 className="text-2xl font-semibold mb-4 text-red-400 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+                <line x1="12" y1="2" x2="12" y2="22"></line>
+              </svg>
               Pagos pendientes ({pendingPayments.length})
             </h2>
 
             {pendingPayments.length === 0 ? (
-              <Card>
+              <Card className="border-gray-700 bg-gray-900">
                 <CardContent className="pt-6">
-                  <p className="text-muted-foreground">No hay pagos pendientes.</p>
+                  <p className="text-gray-400">No hay pagos pendientes.</p>
                 </CardContent>
               </Card>
             ) : (
@@ -506,14 +560,18 @@ export default function ClientDetailsPage() {
 
           {/* Pagos realizados */}
           <div>
-            <h2 className="text-2xl font-semibold mb-4 text-green-600">
+            <h2 className="text-2xl font-semibold mb-4 text-green-400 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
               Pagos realizados ({paidPayments.length})
             </h2>
 
             {paidPayments.length === 0 ? (
-              <Card>
+              <Card className="border-gray-700 bg-gray-900">
                 <CardContent className="pt-6">
-                  <p className="text-muted-foreground">No hay pagos registrados.</p>
+                  <p className="text-gray-400">No hay pagos registrados.</p>
                 </CardContent>
               </Card>
             ) : (
