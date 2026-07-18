@@ -3,7 +3,6 @@
 import { AppShell } from "@/components/app-shell";
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api-client";
-import { API_BASE_URL } from "@/lib/api-config";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -432,35 +431,22 @@ function ContractCard({
     setMessage(null);
 
     const formData = new FormData();
-    formData.append("contract", selectedFile);
-
-    const contractPart = formData.get("contract");
-    if (!(contractPart instanceof File)) {
-      setError("No se pudo preparar el archivo PDF para la carga.");
-      setLoading(false);
-      return;
-    }
+    formData.append("contract", selectedFile, selectedFile.name);
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/clients/${clientId}/contract`,
-        {
-          method: "POST",
-          body: formData,
-        }
+      const response = await apiClient.postFormData<Client>(
+        `/api/clients/${clientId}/contract`,
+        formData
       );
-      const data = await response.json();
 
-      if (!response.ok) {
-        setError(data.message || "Error al cargar el contrato.");
+      if (response.error || !response.data) {
+        setError(response.error || "Error al cargar el contrato.");
       } else {
-        onUploaded(data as Client);
+        onUploaded(response.data);
         setMessage("Contrato cargado correctamente.");
         setSelectedFile(null);
         event.currentTarget.reset();
       }
-    } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "Error al cargar el contrato.");
     } finally {
       setLoading(false);
     }
@@ -475,7 +461,11 @@ function ContractCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <form onSubmit={handleUpload} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <form
+          onSubmit={handleUpload}
+          encType="multipart/form-data"
+          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+        >
           <div className="flex-1 space-y-2">
             <Label htmlFor="contract-file" className="text-gray-300">Archivo PDF</Label>
             <input
