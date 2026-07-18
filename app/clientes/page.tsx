@@ -375,6 +375,10 @@ interface Client {
   box?: string
 }
 
+interface ClientsResponse {
+  clients: Client[]
+}
+
 const createColumns = (
   onDelete: (id: string) => void
 ): ColumnDef<Client>[] => [
@@ -511,12 +515,12 @@ export default function CustomerPage() {
     const fetchClients = async () => {
       try {
         setLoading(true)
-        const response = await apiClient.get('/api/clients/getAllInfo')
+        const response = await apiClient.get<ClientsResponse>('/api/clients/getAllInfo')
         console.log('Response from API:', response)
         if (response.error) {
           setError(response.error)
         } else {
-          const clientsData = Array.isArray(response.data?.clients) ? response.data.clients : (Array.isArray(response.data) ? response.data : [])
+          const clientsData = Array.isArray(response.data?.clients) ? response.data.clients : []
           console.log('Processed clients data:', clientsData)
           setClients(clientsData)
         }

@@ -3,6 +3,7 @@
 import { AppShell } from "@/components/app-shell";
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api-client";
+import { API_BASE_URL } from "@/lib/api-config";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,8 @@ interface Client {
   updatedAt: string;
   __v: number;
   box?: string;
+  contractUrl?: string;
+  contractPublicId?: string;
 }
 
 type AccountStatus = "CURRENT" | "PENDING" | "OVERDUE";
@@ -120,11 +123,13 @@ function PaymentCard({
           </div>
           {!isPaid && (
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="default" size="sm" className="bg-green-600 hover:bg-green-700 text-white">
-                  Pagar
-                </Button>
-              </DialogTrigger>
+              <DialogTrigger
+                render={
+                  <Button variant="default" size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                    Pagar
+                  </Button>
+                }
+              />
               <DialogContent className="bg-gray-900 border-gray-700">
                 <DialogHeader>
                   <DialogTitle className="text-white">Pagar período {payment.period}</DialogTitle>
@@ -272,11 +277,13 @@ function EditClientDialog({ client, onUpdate }: { client: Client; onUpdate: () =
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="text-gray-300 bg-gray-800 border-gray-600 hover:bg-gray-700">
-          Editar
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          <Button variant="outline" size="sm" className="text-gray-300 bg-gray-800 border-gray-600 hover:bg-gray-700">
+            Editar
+          </Button>
+        }
+      />
       <DialogContent className="bg-gray-900 border-gray-700">
         <DialogHeader>
           <DialogTitle className="text-white">Editar cliente</DialogTitle>
@@ -377,9 +384,138 @@ function EditClientDialog({ client, onUpdate }: { client: Client; onUpdate: () =
   );
 }
 
+function ContractCard({
+  clientId,
+  contractUrl,
+  onUploaded,
+}: {
+  clientId: string;
+  contractUrl?: string;
+  onUploaded: (client: Client) => void;
+}) {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    setError(null);
+    setMessage(null);
+
+    if (file && (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf"))) {
+      setSelectedFile(null);
+      setError("Solo se permiten archivos PDF.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file && file.size > 10 * 1024 * 1024) {
+      setSelectedFile(null);
+      setError("El PDF no puede superar los 10 MB.");
+      event.target.value = "";
+      return;
+    }
+
+    setSelectedFile(file);
+  };
+
+  const handleUpload = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedFile) {
+      setError("Selecciona un archivo PDF para cargar.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+
+    const formData = new FormData();
+    formData.append("contract", selectedFile);
+
+    const contractPart = formData.get("contract");
+    if (!(contractPart instanceof File)) {
+      setError("No se pudo preparar el archivo PDF para la carga.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/clients/${clientId}/contract`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "Error al cargar el contrato.");
+      } else {
+        onUploaded(data as Client);
+        setMessage("Contrato cargado correctamente.");
+        setSelectedFile(null);
+        event.currentTarget.reset();
+      }
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : "Error al cargar el contrato.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card className="border-gray-700 bg-gray-900">
+      <CardHeader>
+        <CardTitle className="text-xl text-white">Contrato</CardTitle>
+        <CardDescription className="text-gray-400">
+          Carga y consulta el contrato PDF de este cliente.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <form onSubmit={handleUpload} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex-1 space-y-2">
+            <Label htmlFor="contract-file" className="text-gray-300">Archivo PDF</Label>
+            <input
+              id="contract-file"
+              name="contract"
+              type="file"
+              accept="application/pdf,.pdf"
+              onChange={handleFileChange}
+              disabled={loading}
+              className="h-8 w-full min-w-0 rounded-lg border border-gray-600 bg-gray-800 px-2.5 py-1 text-base text-white transition-colors outline-none file:mr-3 file:border-0 file:bg-gray-700 file:px-3 file:py-1 file:text-sm file:text-gray-200 focus-visible:border-blue-500 md:text-sm"
+            />
+          </div>
+          <Button type="submit" disabled={loading || !selectedFile} className="bg-blue-600 hover:bg-blue-700 text-white">
+            {loading ? "Cargando..." : "Cargar PDF"}
+          </Button>
+        </form>
+
+        {selectedFile && <p className="text-sm text-gray-400">Archivo seleccionado: {selectedFile.name}</p>}
+        {message && <p className="text-sm text-green-400">{message}</p>}
+        {error && <p className="text-sm text-red-400">{error}</p>}
+
+        {contractUrl && (
+          <a
+            href={contractUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            download
+            className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            Ver o descargar contrato actual
+          </a>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function ClientDetailsPage() {
   const params = useParams();
-  const id = params.id;
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const [client, setClient] = useState<ClientPaymentDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -535,6 +671,16 @@ export default function ClientDetailsPage() {
               )}
             </CardContent>
           </Card>
+
+          <ContractCard
+            clientId={client.client._id}
+            contractUrl={client.client.contractUrl}
+            onUploaded={(updatedClient) =>
+              setClient((currentClient) =>
+                currentClient ? { ...currentClient, client: updatedClient } : currentClient
+              )
+            }
+          />
 
           {/* Pagos pendientes */}
           <div>

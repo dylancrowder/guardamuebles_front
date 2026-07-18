@@ -27,10 +27,12 @@ class ApiClient {
     try {
       const response = await fetch(url, {
         ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+        headers: options.body instanceof FormData
+          ? options.headers
+          : {
+              'Content-Type': 'application/json',
+              ...options.headers,
+            },
       })
 
       const data = await response.json()
@@ -71,6 +73,13 @@ class ApiClient {
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: body ? JSON.stringify(body) : undefined,
+    })
+  }
+
+  async postFormData<T>(endpoint: string, body: FormData): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'POST',
+      body,
     })
   }
 
