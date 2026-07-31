@@ -120,7 +120,7 @@ function PaymentCard({
           </div>
           {!isPaid && (
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
+              <DialogTrigger>
                 <Button variant="default" size="sm" className="bg-green-600 hover:bg-green-700 text-white">
                   Pagar
                 </Button>
@@ -272,7 +272,7 @@ function EditClientDialog({ client, onUpdate }: { client: Client; onUpdate: () =
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+      <DialogTrigger>
         <Button variant="outline" size="sm" className="text-gray-300 bg-gray-800 border-gray-600 hover:bg-gray-700">
           Editar
         </Button>

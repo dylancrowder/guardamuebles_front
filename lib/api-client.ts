@@ -33,11 +33,12 @@ class ApiClient {
         },
       })
 
-      const data = await response.json()
+      const responseText = await response.text()
+      const data = responseText ? JSON.parse(responseText) : undefined
 
       if (!response.ok) {
         return {
-          error: data.message || 'Error en la petición',
+          error: data?.message || 'Error en la petición',
           status: response.status,
         }
       }
