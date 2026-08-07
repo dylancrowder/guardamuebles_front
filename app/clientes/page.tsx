@@ -513,8 +513,21 @@ export default function CustomerPage() {
         setLoading(true)
         const response = await apiClient.get('/api/clients/getAllInfo')
         console.log('Response from API:', response)
+
         if (response.error) {
-          setError(response.error)
+          const hasEmptyClientsMessage = typeof response.error === 'string' && response.error.toLowerCase().includes('no hay clientes')
+          const isEmptyClients = response.status === 404 && hasEmptyClientsMessage
+
+          if (response.status === 404 && !response.data) {
+            // Backend may return 404 with no JSON body or generic error text when there are no clients.
+            setClients([])
+            setError(null)
+          } else if (isEmptyClients) {
+            setClients([])
+            setError(null)
+          } else {
+            setError(response.error)
+          }
         } else {
           const clientsData = Array.isArray(response.data?.clients) ? response.data.clients : (Array.isArray(response.data) ? response.data : [])
           console.log('Processed clients data:', clientsData)
