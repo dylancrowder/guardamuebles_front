@@ -30,7 +30,12 @@ const clientFormSchema = z.object({
   amount: z.number().positive("El monto debe ser un número positivo"),
   observations: z.string().optional().default(""),
   entryDate: z.string().min(1, "La fecha de entrada es requerida"),
-  box: z.string().min(1, "El box es requerido"),
+  box: z.union([
+    z.string().min(1, "El box es requerido"),
+    z.array(z.string().min(1, "El box es requerido")).nonempty("El box es requerido"),
+    z.number(),
+    z.array(z.number()).nonempty("El box es requerido"),
+  ]),
 })
 
 type ClientFormData = z.infer<typeof clientFormSchema>
@@ -63,6 +68,55 @@ function DataTable<TData, TValue>({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [boxInput, setBoxInput] = useState('')
+  const [boxValues, setBoxValues] = useState<string[]>([])
+
+  const resetCreateClientForm = () => {
+    setBoxInput('')
+    setBoxValues([])
+    setFieldErrors({})
+    setError(null)
+  }
+
+  const parseBoxInput = (input: string) =>
+    input
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean)
+
+  const prepareBoxPayload = (values: string[]) => {
+    const boxes = values.map((value) => value.trim()).filter(Boolean)
+    if (boxes.length === 0) {
+      return ''
+    }
+
+    return boxes.join(', ')
+  }
+
+  const handleAddBox = () => {
+    const values = parseBoxInput(boxInput)
+
+    if (values.length === 0) {
+      setFieldErrors((prev) => ({ ...prev, box: 'Agrega al menos un box válido.' }))
+      return
+    }
+
+    setFieldErrors((prev) => ({ ...prev, box: '' }))
+    setBoxValues((prev) => {
+      const uniqueBoxes = [...prev]
+      values.forEach((value) => {
+        if (!uniqueBoxes.includes(value)) {
+          uniqueBoxes.push(value)
+        }
+      })
+      return uniqueBoxes
+    })
+    setBoxInput('')
+  }
+
+  const handleRemoveBox = (value: string) => {
+    setBoxValues((prev) => prev.filter((box) => box !== value))
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -70,13 +124,16 @@ function DataTable<TData, TValue>({
     setFieldErrors({})
 
     const formData = new FormData(e.currentTarget)
+    const additionalBoxes = parseBoxInput(boxInput)
+    const allBoxes = [...new Set([...boxValues, ...additionalBoxes])]
+    const boxPayload = prepareBoxPayload(allBoxes)
     const formDataObj = {
       name: formData.get('name') as string,
       whatsapp: formData.get('whatsapp') as string,
       amount: formData.get('amount') ? parseFloat(formData.get('amount') as string) : 0,
       entryDate: formData.get('entryDate') as string,
       observations: formData.get('observations') as string,
-      box: formData.get('box') as string,
+      box: boxPayload,
     }
 
     const result = clientFormSchema.safeParse(formDataObj)
@@ -106,6 +163,7 @@ function DataTable<TData, TValue>({
     if (onAddClient) {
       onAddClient(response.data)
     }
+    resetCreateClientForm()
     setOpen(false)
     setLoading(false)
   }
@@ -116,7 +174,10 @@ function DataTable<TData, TValue>({
         {data.length} cliente{data.length !== 1 ? 's' : ''}
       </div>
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          resetCreateClientForm()
+          setOpen(true)
+        }}
         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg flex items-center gap-2"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -170,11 +231,49 @@ function DataTable<TData, TValue>({
                   </p>
                 )}
               </div>
-              <div>
-                <label htmlFor="box" className="block text-sm font-medium text-gray-300 mb-1.5">
+              <div className="col-span-2">
+                <label htmlFor="boxInput" className="block text-sm font-medium text-gray-300 mb-1.5">
                   Box
                 </label>
-                <Input id="box" name="box" placeholder="Ej: A1" className="bg-gray-800 border-gray-600 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                <div className="flex gap-2">
+                  <Input
+                    id="boxInput"
+                    value={boxInput}
+                    onChange={(e) => setBoxInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleAddBox()
+                      }
+                    }}
+                    placeholder="Ej: 12 o 12, 13, 14"
+                    className="bg-gray-800 border-gray-600 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddBox}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 font-medium"
+                  >
+                    Agregar
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 mt-2">Puedes agregar uno o varios boxes; se guardará como valor único o como lista.</p>
+                {boxValues.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {boxValues.map((boxValue) => (
+                      <span key={boxValue} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-700 text-white text-xs">
+                        {boxValue}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveBox(boxValue)}
+                          className="text-white/70 hover:text-white"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {fieldErrors.box && (
                   <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -238,7 +337,10 @@ function DataTable<TData, TValue>({
             <div className="flex gap-3 justify-end pt-4 border-t border-gray-700">
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  resetCreateClientForm()
+                  setOpen(false)
+                }}
                 disabled={loading}
                 className="px-4 py-2.5 text-gray-300 bg-gray-800 rounded-lg hover:bg-gray-700 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -372,7 +474,7 @@ interface Client {
   daysRemaining?: number
   nextDueDate?: string
   monthsOwed?: number
-  box?: string
+  box?: string | string[]
 }
 
 const createColumns = (
@@ -381,6 +483,13 @@ const createColumns = (
   {
     accessorKey: "box",
     header: "Box",
+    cell: ({ row }) => {
+      const boxValue = row.getValue("box") as string | string[]
+      if (Array.isArray(boxValue)) {
+        return boxValue.join(', ')
+      }
+      return boxValue || '-'
+    },
   },
   {
     accessorKey: "name",

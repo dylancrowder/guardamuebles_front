@@ -21,7 +21,7 @@ interface Client {
   createdAt: string;
   updatedAt: string;
   __v: number;
-  box?: string;
+  box?: string | string[];
 }
 
 type AccountStatus = "CURRENT" | "PENDING" | "OVERDUE";
@@ -227,6 +227,21 @@ const formatUtcDate = (date: string) => {
   return `${day}/${month}/${year}`;
 };
 
+const getBoxValues = (box?: string | string[]) => {
+  if (!box) {
+    return []
+  }
+
+  if (Array.isArray(box)) {
+    return box.map((item) => String(item).trim()).filter(Boolean)
+  }
+
+  return String(box)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
 function EditClientDialog({ client, onUpdate }: { client: Client; onUpdate: () => void }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -237,38 +252,114 @@ function EditClientDialog({ client, onUpdate }: { client: Client; onUpdate: () =
     amount: client.amount,
     entryDate: client.entryDate.split('T')[0],
     observations: client.observations || '',
-    box: client.box || '',
+    box: Array.isArray(client.box)
+      ? client.box.map((item) => String(item).trim()).filter(Boolean)
+      : client.box
+      ? client.box
+          .toString()
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : [],
+    boxInput: '',
   });
+
+  const parseBoxInput = (input: string) =>
+    input
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean)
+
+  const parseExistingBoxValue = (value: string | string[]) =>
+    Array.isArray(value)
+      ? value.map((item) => String(item).trim()).filter(Boolean)
+      : parseBoxInput(String(value))
+
+  const handleAddBox = () => {
+    const values = parseBoxInput(formData.boxInput)
+    if (values.length === 0) {
+      return
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      box: [...new Set([...parseExistingBoxValue(prev.box), ...values])],
+      boxInput: '',
+    }))
+  }
+
+  const handleRemoveBox = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      box: parseExistingBoxValue(prev.box).filter((boxValue) => boxValue !== value),
+    }))
+  }
+
+  const normalizeBoxValue = (value: string | string[]) => {
+    if (Array.isArray(value)) {
+      return value.map((item) => String(item).trim()).filter(Boolean)
+    }
+    return String(value)
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+
+  const createBoxPayload = (value: string | string[]) => {
+    const boxes = normalizeBoxValue(value)
+    if (boxes.length === 0) {
+      return ''
+    }
+    return boxes.join(', ')
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
+    const amount = Number(formData.amount)
+    if (Number.isNaN(amount) || amount <= 0) {
+      setError('El monto debe ser un número válido mayor a 0.')
+      setLoading(false)
+      return
+    }
+
+    if (!formData.entryDate) {
+      setError('La fecha de entrada es requerida.')
+      setLoading(false)
+      return
+    }
+
     try {
-      const updateData = {
+      const boxPayload = createBoxPayload(formData.box)
+      const updateData: Record<string, unknown> = {
         name: formData.name,
         whatsapp: formData.whatsapp,
-        amount: formData.amount,
+        amount,
         entryDate: new Date(formData.entryDate).toISOString(),
         observations: formData.observations,
-        box: formData.box,
-      };
+      }
 
-      const response = await apiClient.put(`/api/clients/${client._id}`, updateData);
+      if (boxPayload) {
+        updateData.box = boxPayload
+      }
+
+      const response = await apiClient.put(`/api/clients/${client._id}`, updateData)
 
       if (response.error) {
-        setError(response.error);
+        setError(response.error)
       } else {
-        setOpen(false);
-        onUpdate();
+        setOpen(false)
+        onUpdate()
       }
     } catch (err) {
-      setError('Error al actualizar el cliente');
+      console.error('Update client error:', err)
+      setError(err instanceof Error ? err.message : 'Error al actualizar el cliente')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -306,14 +397,43 @@ function EditClientDialog({ client, onUpdate }: { client: Client; onUpdate: () =
                 className="bg-gray-800 border-gray-600 text-white"
               />
             </div>
-            <div>
-              <Label htmlFor="box" className="text-gray-300">Box</Label>
-              <Input
-                id="box"
-                value={formData.box}
-                onChange={(e) => setFormData({ ...formData, box: e.target.value })}
-                className="bg-gray-800 border-gray-600 text-white"
-              />
+            <div className="col-span-2">
+              <Label htmlFor="boxInput" className="text-gray-300">Box</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="boxInput"
+                  value={formData.boxInput}
+                  onChange={(e) => setFormData({ ...formData, boxInput: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleAddBox()
+                    }
+                  }}
+                  placeholder="Ej: 12 o 12, 13, 14"
+                  className="bg-gray-800 border-gray-600 text-white"
+                />
+                <Button type="button" onClick={handleAddBox} className="bg-blue-600 text-white hover:bg-blue-700">
+                  Agregar
+                </Button>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">Puedes agregar uno o varios boxes; se guardará como valor único o como lista.</p>
+              {Array.isArray(formData.box) && formData.box.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {formData.box.map((boxValue) => (
+                    <span key={boxValue} className="inline-flex items-center gap-2 rounded-full bg-blue-700 px-3 py-1 text-xs text-white">
+                      {boxValue}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveBox(boxValue)}
+                        className="text-white/70 hover:text-white"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             <div>
               <Label htmlFor="amount" className="text-gray-300">Monto Mensual</Label>
@@ -485,7 +605,17 @@ export default function ClientDetailsPage() {
 
                 <div>
                   <p className="text-sm text-gray-400">Box</p>
-                  <p className="font-medium text-gray-100">{client.client.box || '-'}</p>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {getBoxValues(client.client.box).length > 0 ? (
+                      getBoxValues(client.client.box).map((boxValue) => (
+                        <span key={boxValue} className="inline-flex items-center rounded-full bg-blue-700 px-3 py-1 text-xs font-medium text-white">
+                          {boxValue}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="font-medium text-gray-100">-</span>
+                    )}
+                  </div>
                 </div>
 
                 <div>
