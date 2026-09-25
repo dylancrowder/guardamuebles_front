@@ -500,7 +500,7 @@ const createColumns = (
     header: "Whatsapp",
     cell: ({ row }) => {
       const whatsapp = row.getValue("whatsapp") as string
-      const message = "Hola, te recordamos sobre tu pago pendiente. Por favor contactanos para regularizar tu situación."
+      const message = "Hola, te recordamos el pago correspondiente a este mes. ¡Gracias!"
       const whatsappUrl = `https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`
       
       return (
