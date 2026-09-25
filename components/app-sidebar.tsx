@@ -19,7 +19,7 @@ import {
 const navItems = [
   { href: "/", label: "Inicio", icon: Home },
   { href: "/clientes", label: "Clientes", icon: Users },
-    { href: "/ventas", label: "Ventas", icon: Users },
+    { href: "/ventas", label: "Gestión de turnos", icon: Users },
   { href: "/configuracion", label: "Configuración", icon: Settings },
 ]
 
