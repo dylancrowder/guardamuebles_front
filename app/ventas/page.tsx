@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { CalendarDays, ChevronLeft, ChevronRight, MapPin, Pencil, Phone, Plus, Trash2, X } from "lucide-react"
+import { CalendarDays, ChevronLeft, ChevronRight, MapPin, Pencil, Phone, Plus, Share2, Trash2, X } from "lucide-react"
 import { AppShell } from "@/components/app-shell"
 import { apiClient } from "@/lib/api-client"
 import { Badge } from "@/components/ui/badge"
@@ -120,6 +120,23 @@ export default function VentasPage() {
     const dateKey = formatDateKey(date)
     setSelectedDate(dateKey)
     setForm((currentForm) => ({ ...currentForm, date: dateKey }))
+  }
+
+  function shareSelectedTrips() {
+    const message = [
+      `Turnos agendados - ${formatLongDate(selectedDate)}`,
+      "",
+      ...selectedTrips.flatMap((trip, index) => [
+        `${index + 1}. Turno de las ${trip.time}`,
+        `   Origen: ${trip.origin}`,
+        `   Destino: ${trip.destination}`,
+        `   WhatsApp: ${trip.whatsapp}`,
+        ...(trip.description ? [`   Detalles: ${trip.description}`] : []),
+        "",
+      ]),
+    ].join("\n")
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer")
   }
 
   function openNewTrip() {
@@ -280,9 +297,22 @@ return (
                 <CardTitle className="capitalize text-lg text-white">{formatLongDate(selectedDate)}</CardTitle>
                 <p className="mt-1 text-sm text-gray-400">{selectedTrips.length} {selectedTrips.length === 1 ? "turno agendado" : "turnos agendados"}</p>
               </div>
-              <Button variant="ghost" size="icon" onClick={openNewTrip} aria-label="Agregar turno">
-                <Plus className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={shareSelectedTrips}
+                  disabled={selectedTrips.length === 0}
+                  aria-label="Compartir turnos por WhatsApp"
+                  title="Compartir por WhatsApp"
+                  className="text-gray-400 hover:text-green-400"
+                >
+                  <Share2 className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={openNewTrip} aria-label="Agregar turno">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-3">
               {selectedTrips.length === 0 ? (
