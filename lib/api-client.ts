@@ -11,6 +11,21 @@ export interface ApiError {
   status: number
 }
 
+function getErrorMessage(value: unknown): string | undefined {
+  if (typeof value === 'string' && value.trim()) {
+    return value
+  }
+
+  if (value && typeof value === 'object') {
+    const errorData = value as Record<string, unknown>
+    return getErrorMessage(errorData.message) ??
+      getErrorMessage(errorData.error) ??
+      getErrorMessage(errorData.details)
+  }
+
+  return undefined
+}
+
 class ApiClient {
   private baseURL: string
 
@@ -38,7 +53,7 @@ class ApiClient {
 
       if (!response.ok) {
         return {
-          error: data?.message || 'Error en la petición',
+          error: getErrorMessage(data) || 'Error en la petición',
           status: response.status,
         }
       }

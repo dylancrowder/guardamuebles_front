@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { CalendarPlus, Pencil, Trash2 } from "lucide-react";
 
 //hola
 interface Client {
@@ -47,6 +48,19 @@ interface PaymentHistory {
   amount: number;
 }
 
+interface PaymentRecord {
+  _id: string;
+  amount: number;
+  period: string;
+  paymentDate: string;
+  description?: unknown;
+}
+
+interface PaymentListResponse {
+  payments: PaymentRecord[];
+  pagination?: unknown;
+}
+
 interface ClientPaymentDetailResponse {
   client: Client;
   account: Account;
@@ -68,6 +82,7 @@ function PaymentCard({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [description, setDescription] = useState(`Pago mensual de ${payment.period}`);
+  const [paymentDate, setPaymentDate] = useState(getTodayDate());
 
   const handlePayment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -77,7 +92,7 @@ function PaymentCard({
     const paymentData = {
       amount: clientAmount,
       period: payment.period,
-      paymentDate: new Date().toISOString(),
+      paymentDate,
       description: description,
     };
 
@@ -154,10 +169,23 @@ function PaymentCard({
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="paymentDate" className="text-gray-300">Fecha de pago</Label>
+                    <Input
+                      id="paymentDate"
+                      type="date"
+                      required
+                      value={paymentDate}
+                      onChange={(e) => setPaymentDate(e.target.value)}
+                      className="bg-gray-800 border-gray-600 text-white"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="description" className="text-gray-300">Descripción</Label>
                     <Input
                       id="description"
                       placeholder="Descripción del pago"
+                      maxLength={300}
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       className="bg-gray-800 border-gray-600 text-white"
@@ -214,6 +242,355 @@ function PaymentCard({
   );
 
 
+}
+
+function getTodayDate() {
+  const date = new Date();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function RegisterMultiplePaymentsDialog({
+  pendingPeriods,
+  paidPeriods,
+  clientId,
+  clientAmount,
+  onPaymentSuccess,
+}: {
+  pendingPeriods: string[];
+  paidPeriods: string[];
+  clientId: string;
+  clientAmount: number;
+  onPaymentSuccess: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
+  const [additionalPeriods, setAdditionalPeriods] = useState<string[]>([]);
+  const [periodToAdd, setPeriodToAdd] = useState(getTodayDate().slice(0, 7));
+  const [amount, setAmount] = useState(String(clientAmount));
+  const [paymentDate, setPaymentDate] = useState(getTodayDate());
+  const [description, setDescription] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const currentMonth = getTodayDate().slice(0, 7);
+  const availablePeriods = [...new Set([...pendingPeriods, currentMonth, ...additionalPeriods])]
+    .filter((period) => !paidPeriods.includes(period))
+    .sort();
+
+  const togglePeriod = (period: string) => {
+    setSelectedPeriods((current) =>
+      current.includes(period)
+        ? current.filter((item) => item !== period)
+        : [...current, period]
+    );
+  };
+
+  const addPeriod = () => {
+    setError(null);
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(periodToAdd)) {
+      setError("Selecciona un período válido.");
+      return;
+    }
+    if (paidPeriods.includes(periodToAdd)) {
+      setError("Ese período ya está pagado.");
+      return;
+    }
+    if (periodToAdd < currentMonth && !pendingPeriods.includes(periodToAdd)) {
+      setError("Solo puedes agregar meses adeudados anteriores al mes actual.");
+      return;
+    }
+
+    if (!availablePeriods.includes(periodToAdd)) {
+      setAdditionalPeriods((current) => [...current, periodToAdd]);
+    }
+    setSelectedPeriods((current) =>
+      current.includes(periodToAdd) ? current : [...current, periodToAdd]
+    );
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    const uniquePeriods = [...new Set(selectedPeriods)];
+    const numericAmount = Number(amount);
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0 || uniquePeriods.length === 0) {
+      setError("Ingresa un monto válido y selecciona al menos un período.");
+      return;
+    }
+    if (uniquePeriods.some((period) => paidPeriods.includes(period))) {
+      setError("La selección contiene un período que ya está pagado. Actualiza el historial e inténtalo nuevamente.");
+      return;
+    }
+
+    setLoading(true);
+    const response = await apiClient.post<PaymentRecord | PaymentRecord[]>(
+      `/api/payments/addPayment/${clientId}`,
+      { amount: numericAmount, periods: uniquePeriods, paymentDate, description }
+    );
+
+    if (response.error) {
+      setError(response.error);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
+    setOpen(false);
+    setSelectedPeriods([]);
+    onPaymentSuccess();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger>
+        <Button type="button" variant="outline" className="border-gray-600 bg-gray-800 text-gray-100 hover:bg-gray-700">
+          <CalendarPlus aria-hidden="true" />
+          Pagar varios meses
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="border-gray-700 bg-gray-900">
+        <DialogHeader>
+          <DialogTitle className="text-white">Registrar varios meses</DialogTitle>
+          <DialogDescription className="text-gray-400">
+            El importe indicado se aplica a cada período seleccionado.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <fieldset className="max-h-48 space-y-2 overflow-y-auto rounded-md border border-gray-700 p-3">
+            <legend className="px-1 text-sm text-gray-300">Meses sin pagar</legend>
+            {availablePeriods.length === 0 && (
+              <p className="text-sm text-gray-400">Agrega un mes actual o futuro para continuar.</p>
+            )}
+            {availablePeriods.map((period) => (
+              <label key={period} className="flex cursor-pointer items-center gap-3 text-sm text-gray-100">
+                <input
+                  type="checkbox"
+                  checked={selectedPeriods.includes(period)}
+                  onChange={() => togglePeriod(period)}
+                  className="size-4 accent-blue-500"
+                />
+                {period}
+              </label>
+            ))}
+          </fieldset>
+          <div className="flex items-end gap-2">
+            <div className="min-w-0 flex-1 space-y-2">
+              <Label htmlFor="multiple-payment-period" className="text-gray-300">Agregar mes futuro</Label>
+              <Input
+                id="multiple-payment-period"
+                type="month"
+                min={currentMonth}
+                value={periodToAdd}
+                onChange={(event) => setPeriodToAdd(event.target.value)}
+                className="border-gray-600 bg-gray-800 text-white"
+              />
+            </div>
+            <Button type="button" variant="outline" onClick={addPeriod}>
+              Agregar
+            </Button>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="multiple-payment-amount" className="text-gray-300">Monto por mes</Label>
+            <Input
+              id="multiple-payment-amount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              required
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+              className="border-gray-600 bg-gray-800 text-white"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="multiple-payment-date" className="text-gray-300">Fecha de pago</Label>
+            <Input
+              id="multiple-payment-date"
+              type="date"
+              required
+              value={paymentDate}
+              onChange={(event) => setPaymentDate(event.target.value)}
+              className="border-gray-600 bg-gray-800 text-white"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="multiple-payment-description" className="text-gray-300">Descripción</Label>
+            <Input
+              id="multiple-payment-description"
+              maxLength={300}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              className="border-gray-600 bg-gray-800 text-white"
+            />
+          </div>
+          {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
+          <DialogFooter>
+            <Button type="button" variant="outline" disabled={loading} onClick={() => setOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading || selectedPeriods.length === 0}>
+              {loading ? "Procesando..." : `Registrar ${selectedPeriods.length} períodos`}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PaidPaymentCard({
+  payment,
+  onPaymentUpdated,
+}: {
+  payment: PaymentRecord;
+  onPaymentUpdated: () => void;
+}) {
+  const currentDescription = typeof payment.description === "string" ? payment.description : "";
+  const [open, setOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [amount, setAmount] = useState(String(payment.amount));
+  const [period, setPeriod] = useState(payment.period);
+  const [paymentDate, setPaymentDate] = useState(payment.paymentDate?.slice(0, 10) ?? "");
+  const [description, setDescription] = useState(currentDescription);
+
+  const handleUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    const numericAmount = Number(amount);
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setError("El monto debe ser un número válido mayor a 0.");
+      return;
+    }
+
+    const changes: Partial<Pick<PaymentRecord, "amount" | "period" | "paymentDate" | "description">> = {};
+    if (numericAmount !== payment.amount) changes.amount = numericAmount;
+    if (period !== payment.period) changes.period = period;
+    if (paymentDate !== payment.paymentDate?.slice(0, 10)) changes.paymentDate = paymentDate;
+    if (description !== currentDescription) changes.description = description;
+    if (Object.keys(changes).length === 0) {
+      setOpen(false);
+      return;
+    }
+
+    setLoading(true);
+    const response = await apiClient.put(
+      `/api/payments/updatePayment/${payment._id}`,
+      changes
+    );
+    setLoading(false);
+
+    if (response.error) {
+      setError(response.error);
+      return;
+    }
+
+    setOpen(false);
+    onPaymentUpdated();
+  };
+
+  const handleDelete = async () => {
+    setError(null);
+    setLoading(true);
+    const response = await apiClient.delete(`/api/payments/deletePayment/${payment._id}`);
+    setLoading(false);
+
+    if (response.error) {
+      setError(response.error);
+      return;
+    }
+    setDeleteDialogOpen(false);
+    onPaymentUpdated();
+  };
+
+  return (
+    <Card className="border-gray-700 bg-gray-900">
+      <CardHeader>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-base font-semibold text-white">Período: {payment.period}</h3>
+            <p className="mt-1 text-sm text-green-400">Pagado</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger>
+                <Button type="button" variant="outline" size="icon" aria-label={`Editar pago ${payment.period}`} title="Editar pago">
+                  <Pencil aria-hidden="true" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="border-gray-700 bg-gray-900">
+                <DialogHeader>
+                  <DialogTitle className="text-white">Editar pago de {payment.period}</DialogTitle>
+                  <DialogDescription className="text-gray-400">Modifica los campos necesarios.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleUpdate} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor={`edit-amount-${payment._id}`} className="text-gray-300">Monto</Label>
+                    <Input id={`edit-amount-${payment._id}`} type="number" min="0.01" step="0.01" required value={amount} onChange={(event) => setAmount(event.target.value)} className="border-gray-600 bg-gray-800 text-white" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`edit-period-${payment._id}`} className="text-gray-300">Período</Label>
+                    <Input id={`edit-period-${payment._id}`} type="month" required value={period} onChange={(event) => setPeriod(event.target.value)} className="border-gray-600 bg-gray-800 text-white" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`edit-date-${payment._id}`} className="text-gray-300">Fecha de pago</Label>
+                    <Input id={`edit-date-${payment._id}`} type="date" required value={paymentDate} onChange={(event) => setPaymentDate(event.target.value)} className="border-gray-600 bg-gray-800 text-white" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`edit-description-${payment._id}`} className="text-gray-300">Descripción</Label>
+                    <Input id={`edit-description-${payment._id}`} maxLength={300} value={description} onChange={(event) => setDescription(event.target.value)} className="border-gray-600 bg-gray-800 text-white" />
+                  </div>
+                  {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
+                  <DialogFooter>
+                    <Button type="button" variant="outline" disabled={loading} onClick={() => setOpen(false)}>Cancelar</Button>
+                    <Button type="submit" disabled={loading}>{loading ? "Guardando..." : "Guardar cambios"}</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+            <Button type="button" variant="ghost" size="icon" aria-label={`Eliminar pago ${payment.period}`} title="Eliminar pago" disabled={loading} onClick={() => { setError(null); setDeleteDialogOpen(true); }} className="h-8 w-8 text-gray-400 hover:bg-red-950/40 hover:text-red-400">
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+            </Button>
+            <Dialog
+              open={deleteDialogOpen}
+              onOpenChange={(nextOpen) => {
+                if (!loading) {
+                  setDeleteDialogOpen(nextOpen);
+                  if (!nextOpen) setError(null);
+                }
+              }}
+            >
+              <DialogContent className="border-gray-700 bg-gray-900">
+                <DialogHeader>
+                  <DialogTitle className="text-white">Eliminar pago</DialogTitle>
+                  <DialogDescription className="text-gray-400">
+                    ¿Confirmas que deseas eliminar el pago de {payment.period}? Esta acción no se puede deshacer.
+                  </DialogDescription>
+                </DialogHeader>
+                {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
+                <DialogFooter>
+                  <Button type="button" variant="outline" disabled={loading} onClick={() => setDeleteDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="button" variant="destructive" disabled={loading} onClick={handleDelete}>
+                    {loading ? "Eliminando..." : "Eliminar pago"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <p className="text-sm text-gray-300"><strong className="text-gray-100">Fecha de pago:</strong> {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : "-"}</p>
+        <p className="text-sm text-gray-300"><strong className="text-gray-100">Monto:</strong> ${payment.amount.toLocaleString()}</p>
+        {currentDescription && <p className="text-sm text-gray-300"><strong className="text-gray-100">Descripción:</strong> {currentDescription}</p>}
+        {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
+      </CardContent>
+    </Card>
+  );
 }
 
 
@@ -502,21 +879,34 @@ export default function ClientDetailsPage() {
   const id = params.id;
 
   const [client, setClient] = useState<ClientPaymentDetailResponse | null>(null);
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [paymentsError, setPaymentsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchClient = async () => {
     try {
       setLoading(true);
+      setError(null);
+      setPaymentsError(null);
 
-      const response = await apiClient.get(
-        `/api/payments/getPaymentInfo/${id}`
-      );
+      const [clientResponse, paymentsResponse] = await Promise.all([
+        apiClient.get<ClientPaymentDetailResponse>(`/api/payments/getPaymentInfo/${id}`),
+        apiClient.get<PaymentListResponse>(`/api/payments/getPayments/${id}`),
+      ]);
 
-      if (response.error) {
-        setError(response.error);
+      if (clientResponse.error) {
+        setError(clientResponse.error);
+        return;
+      }
+
+      setClient(clientResponse.data as ClientPaymentDetailResponse);
+      if (paymentsResponse.error) {
+        setPaymentsError(paymentsResponse.error);
+        setPayments([]);
       } else {
-        setClient(response.data as ClientPaymentDetailResponse);
+        const paymentData = paymentsResponse.data as PaymentListResponse | PaymentRecord[] | undefined;
+        setPayments(Array.isArray(paymentData) ? paymentData : paymentData?.payments ?? []);
       }
     } catch (err) {
       console.error(err);
@@ -534,9 +924,7 @@ export default function ClientDetailsPage() {
 
   const pendingPayments =
     client?.history.filter((payment) => payment.status === "PENDING") ?? [];
-
-  const paidPayments =
-    client?.history.filter((payment) => payment.status === "PAID") ?? [];
+  const pendingPeriods = [...new Set(pendingPayments.map((payment) => payment.period))];
 
   if (loading) {
     return (
@@ -668,14 +1056,23 @@ export default function ClientDetailsPage() {
 
           {/* Pagos pendientes */}
           <div>
-            <h2 className="text-2xl font-semibold mb-4 text-red-400 flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-                <line x1="12" y1="2" x2="12" y2="22"></line>
-              </svg>
-              Pagos pendientes ({pendingPayments.length})
-            </h2>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-2xl font-semibold text-red-400 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                  <line x1="12" y1="2" x2="12" y2="22"></line>
+                </svg>
+                Pagos pendientes ({pendingPayments.length})
+              </h2>
+              <RegisterMultiplePaymentsDialog
+                pendingPeriods={pendingPeriods}
+                paidPeriods={payments.map((payment) => payment.period)}
+                clientId={client.client._id}
+                clientAmount={client.client.amount}
+                onPaymentSuccess={fetchClient}
+              />
+            </div>
 
             {pendingPayments.length === 0 ? (
               <Card className="border-gray-700 bg-gray-900">
@@ -705,23 +1102,28 @@ export default function ClientDetailsPage() {
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                 <polyline points="22 4 12 14.01 9 11.01"></polyline>
               </svg>
-              Pagos realizados ({paidPayments.length})
+              Pagos realizados ({payments.length})
             </h2>
 
-            {paidPayments.length === 0 ? (
+            {paymentsError && (
+              <p role="alert" className="mb-4 rounded-md border border-red-800 bg-red-950/30 p-3 text-sm text-red-400">
+                No se pudo cargar el historial de pagos: {paymentsError}
+              </p>
+            )}
+
+            {payments.length === 0 ? (
               <Card className="border-gray-700 bg-gray-900">
                 <CardContent className="pt-6">
-                  <p className="text-gray-400">No hay pagos registrados.</p>
+                  <p className="text-gray-400">{paymentsError ? "El historial no está disponible." : "No hay pagos registrados."}</p>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-4">
-                {paidPayments.map((payment) => (
-                  <PaymentCard
-                    key={payment.period}
+                {payments.map((payment) => (
+                  <PaidPaymentCard
+                    key={payment._id}
                     payment={payment}
-                    clientId={client.client._id}
-                    clientAmount={client.client.amount}
+                    onPaymentUpdated={fetchClient}
                   />
                 ))}
               </div>

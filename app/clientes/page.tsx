@@ -22,6 +22,7 @@ import {
 import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { apiClient } from "@/lib/api-client"
 
 const clientFormSchema = z.object({
@@ -613,6 +614,9 @@ export default function CustomerPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null)
+  const [deletingClient, setDeletingClient] = useState(false)
+  const [deleteClientError, setDeleteClientError] = useState<string | null>(null)
 
  
 
@@ -683,17 +687,27 @@ export default function CustomerPage() {
   }
 
   const handleDeleteClient = (id: string) => {
-    if (!confirm('¿Estás seguro que deseas eliminar este cliente?')) {
+    const client = clients.find((item) => item._id === id)
+    if (!client) return
+    setDeleteClientError(null)
+    setClientToDelete(client)
+  }
+
+  const confirmDeleteClient = async () => {
+    if (!clientToDelete) return
+    setDeletingClient(true)
+    setDeleteClientError(null)
+
+    const response = await apiClient.delete(`/api/clients/${clientToDelete._id}`)
+    setDeletingClient(false)
+
+    if (response.error) {
+      setDeleteClientError(response.error)
       return
     }
 
-    apiClient.delete(`/api/clients/${id}`).then((response) => {
-      if (response.error) {
-        setError(response.error)
-      } else {
-        setClients((prevClients) => prevClients.filter((client) => client._id !== id))
-      }
-    })
+    setClients((prevClients) => prevClients.filter((client) => client._id !== clientToDelete._id))
+    setClientToDelete(null)
   }
 
   const columns = createColumns(handleDeleteClient)
@@ -707,6 +721,33 @@ export default function CustomerPage() {
         data={clients}
         onAddClient={(newClient) => setClients([...clients, newClient])}
       />
+      <Dialog
+        open={Boolean(clientToDelete)}
+        onOpenChange={(open) => {
+          if (!open && !deletingClient) {
+            setClientToDelete(null)
+            setDeleteClientError(null)
+          }
+        }}
+      >
+        <DialogContent className="border-gray-700 bg-gray-900">
+          <DialogHeader>
+            <DialogTitle className="text-white">Eliminar cliente</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              ¿Confirmas que deseas eliminar a {clientToDelete?.name}? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          {deleteClientError && <p role="alert" className="text-sm text-red-400">{deleteClientError}</p>}
+          <DialogFooter>
+            <Button type="button" variant="outline" disabled={deletingClient} onClick={() => setClientToDelete(null)}>
+              Cancelar
+            </Button>
+            <Button type="button" variant="destructive" disabled={deletingClient} onClick={confirmDeleteClient}>
+              {deletingClient ? "Eliminando..." : "Eliminar cliente"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <div className="mt-8 p-6 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl border border-blue-500 shadow-lg">
         <div className="flex items-center justify-between">
           <div>
