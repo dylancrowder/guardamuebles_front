@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Users, Wallet } from "lucide-react"
+import { DatabaseBackup, Users, Wallet } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -20,6 +20,7 @@ const navItems = [
   { href: "/clientes", label: "Guardamuebles", icon: Users },
   { href: "/ventas", label: "Gestión de turnos", icon: Users },
   { href: "/finanzas", label: "Finanzas", icon: Wallet },
+  { href: "/configuracion", label: "Respaldo de datos", icon: DatabaseBackup },
 ]
 
 export function AppSidebar() {

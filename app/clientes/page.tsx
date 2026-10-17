@@ -485,11 +485,26 @@ const createColumns = (
     accessorKey: "box",
     header: "Box",
     cell: ({ row }) => {
-      const boxValue = row.getValue("box") as string | string[]
-      if (Array.isArray(boxValue)) {
-        return boxValue.join(', ')
-      }
-      return boxValue || '-'
+      const boxValue = row.getValue("box") as unknown
+      const boxes = (Array.isArray(boxValue) ? boxValue : [boxValue ?? ""])
+        .flatMap((value) => String(value).split(","))
+        .map((value) => value.trim())
+        .filter(Boolean)
+
+      if (boxes.length === 0) return <span className="text-gray-500">-</span>
+
+      return (
+        <div className="flex flex-wrap gap-1.5">
+          {boxes.map((box, index) => (
+            <span
+              key={`${box}-${index}`}
+              className="inline-flex items-center rounded-full border border-blue-400/30 bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-200"
+            >
+              {box}
+            </span>
+          ))}
+        </div>
+      )
     },
   },
   {
@@ -543,7 +558,21 @@ const createColumns = (
     header: "Días Restantes",
     cell: ({ row }) => {
       const days = row.getValue("daysRemaining") as number
-      return days !== undefined ? days : '-'
+      if (days === undefined) return <span className="text-gray-500">-</span>
+
+      if (days <= 0) {
+        return (
+          <span className="inline-flex items-center rounded-full border border-red-400/30 bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-red-300">
+            {days < 0 ? `Vencido hace ${Math.abs(days)} días` : "Vencido"}
+          </span>
+        )
+      }
+
+      return (
+        <span className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
+          {days} {days === 1 ? "día" : "días"}
+        </span>
+      )
     },
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
