@@ -11,6 +11,12 @@ interface ClientPhoto {
   url: string;
 }
 
+function isClientPhoto(value: unknown): value is ClientPhoto {
+  if (!value || typeof value !== "object") return false;
+  const photo = value as Record<string, unknown>;
+  return typeof photo.id === "string" && photo.id.length > 0 && typeof photo.url === "string" && photo.url.length > 0;
+}
+
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 export function ClientPhotos({ clientId }: { clientId: string }) {
@@ -27,11 +33,12 @@ export function ClientPhotos({ clientId }: { clientId: string }) {
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setPhotos([]);
     setListError(null);
     apiClient.get<ClientPhoto[]>(endpoint).then((response) => {
       if (!active) return;
-      if (response.error || !Array.isArray(response.data)) {
-        setListError(response.error || "No se pudieron cargar las fotografías.");
+      if (response.error || !Array.isArray(response.data) || !response.data.every(isClientPhoto)) {
+        setListError(response.error || "El servidor devolvió fotografías con un formato inválido.");
       } else {
         setPhotos(response.data);
       }
@@ -60,8 +67,8 @@ export function ClientPhotos({ clientId }: { clientId: string }) {
       const body = new FormData();
       body.append("photo", file);
       const response = await apiClient.upload<ClientPhoto>(endpoint, body);
-      if (response.error || !response.data?.id || !response.data.url) {
-        setError(response.error || "No se pudo guardar la fotografía. Inténtalo de nuevo.");
+      if (response.error || !isClientPhoto(response.data)) {
+        setError(response.error || "El servidor devolvió una fotografía con un formato inválido.");
         break;
       }
       const photo = response.data;

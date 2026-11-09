@@ -1055,7 +1055,7 @@ export default function ClientDetailsPage() {
             </CardContent>
           </Card>
 
-          <ClientPhotos clientId={client.client._id} />
+          <ClientPhotos key={client.client._id} clientId={client.client._id} />
 
           {/* Pagos pendientes */}
           <div>
