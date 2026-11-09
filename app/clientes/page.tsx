@@ -478,6 +478,24 @@ interface Client {
   box?: string | string[]
 }
 
+const getNextMonthlyDueDate = (date: string) => {
+  const [year, month, day] = date.slice(0, 10).split("-").map(Number)
+  if (!year || !month || !day) return null
+
+  const today = new Date()
+  const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  const dueMonth = new Date(year, month - 1, 1)
+  let dueDate = new Date(year, month - 1, Math.min(day, new Date(year, month, 0).getDate()))
+
+  while (dueDate < todayDate) {
+    dueMonth.setMonth(dueMonth.getMonth() + 1)
+    const lastDayOfMonth = new Date(dueMonth.getFullYear(), dueMonth.getMonth() + 1, 0).getDate()
+    dueDate = new Date(dueMonth.getFullYear(), dueMonth.getMonth(), Math.min(day, lastDayOfMonth))
+  }
+
+  return dueDate
+}
+
 const createColumns = (
   onDelete: (id: string) => void
 ): ColumnDef<Client>[] => [
@@ -589,7 +607,27 @@ const createColumns = (
     cell: ({ row }) => {
       const date = row.getValue("nextDueDate") as string
       if (!date) return '-'
-      return new Date(date).toLocaleDateString()
+      const nextMonthlyDueDate = getNextMonthlyDueDate(date)
+      if (!nextMonthlyDueDate) return new Date(date).toLocaleDateString()
+
+      const today = new Date()
+      const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+      const daysUntilDue = Math.round((nextMonthlyDueDate.getTime() - todayDate.getTime()) / 86400000)
+      const hasDebt = (row.original.monthsOwed ?? 0) > 0
+      const timeUntilDue = daysUntilDue === 0
+        ? hasDebt ? "Se suma otro mes adeudado hoy" : "Vence hoy"
+        : hasDebt
+          ? `Se suma otro mes adeudado en ${daysUntilDue} ${daysUntilDue === 1 ? "día" : "días"}`
+          : `Faltan ${daysUntilDue} ${daysUntilDue === 1 ? "día" : "días"}`
+
+      return (
+        <div className="space-y-1">
+          <div>{nextMonthlyDueDate.toLocaleDateString()}</div>
+          <p className={`text-xs ${hasDebt ? "text-red-300" : "text-gray-400"}`}>
+            {timeUntilDue}
+          </p>
+        </div>
+      )
     },
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
