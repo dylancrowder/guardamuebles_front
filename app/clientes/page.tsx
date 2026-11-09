@@ -684,6 +684,8 @@ export default function CustomerPage() {
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null)
   const [deletingClient, setDeletingClient] = useState(false)
   const [deleteClientError, setDeleteClientError] = useState<string | null>(null)
+  const [totalDebt, setTotalDebt] = useState<number | null>(null)
+  const [debtError, setDebtError] = useState(false)
 
  
 
@@ -723,6 +725,34 @@ export default function CustomerPage() {
 
     fetchClients()
   }, [])
+
+  useEffect(() => {
+    let active = true
+
+    const fetchTotalDebt = async () => {
+      setTotalDebt(null)
+      setDebtError(false)
+
+      const responses = await Promise.all(
+        clients.map((client) =>
+          apiClient.get<{ account: { totalDebt: number } }>(`/api/payments/getPaymentInfo/${client._id}`)
+        )
+      )
+
+      if (!active) return
+
+      if (responses.some((response) => response.error || typeof response.data?.account?.totalDebt !== "number" || !Number.isFinite(response.data.account.totalDebt))) {
+        setDebtError(true)
+        return
+      }
+
+      setTotalDebt(responses.reduce((sum, response) => sum + response.data!.account.totalDebt, 0))
+    }
+
+    if (!loading && !error) fetchTotalDebt()
+
+    return () => { active = false }
+  }, [clients, loading, error])
 
   if (loading) {
     return (
@@ -830,6 +860,16 @@ export default function CustomerPage() {
             </svg>
           </div>
         </div>
+      </div>
+      <div className="mt-8 p-6 bg-gradient-to-r from-red-900 to-red-800 rounded-xl border border-red-700 shadow-lg">
+        <p className="text-sm font-medium text-red-100 mb-1">Total pendiente de cobro</p>
+        {debtError ? (
+          <p role="alert" className="text-sm text-red-100">No se pudo calcular el total pendiente. Intenta recargar la página.</p>
+        ) : totalDebt === null ? (
+          <p className="text-sm text-red-100">Calculando deuda...</p>
+        ) : (
+          <p className="text-3xl font-bold text-white">${totalDebt.toLocaleString()}</p>
+        )}
       </div>
     </AppShell>
   )
