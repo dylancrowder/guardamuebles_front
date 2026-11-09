@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, Images, ImagePlus } from "lucide-react";
+import { Camera, Images, ImagePlus, Trash2 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface ClientPhoto {
   id: string;
@@ -26,6 +27,9 @@ export function ClientPhotos({ clientId }: { clientId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
+  const [photoToDelete, setPhotoToDelete] = useState<ClientPhoto | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const endpoint = `/api/clients/${encodeURIComponent(clientId)}/photos`;
@@ -77,6 +81,20 @@ export function ClientPhotos({ clientId }: { clientId: string }) {
     setUploading(false);
   };
 
+  const handleDelete = async () => {
+    if (!photoToDelete || deleting) return;
+    setDeleteError(null);
+    setDeleting(true);
+    const response = await apiClient.delete(`${endpoint}/${encodeURIComponent(photoToDelete.id)}`);
+    setDeleting(false);
+    if (response.error) {
+      setDeleteError(`No se pudo eliminar la fotografía: ${response.error}`);
+      return;
+    }
+    setPhotos((current) => current.filter((photo) => photo.id !== photoToDelete.id));
+    setPhotoToDelete(null);
+  };
+
   return (
     <Card className="border-gray-700 bg-gray-900">
       <CardHeader className="gap-4 sm:flex sm:flex-row sm:items-start sm:justify-between">
@@ -113,13 +131,31 @@ export function ClientPhotos({ clientId }: { clientId: string }) {
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {photos.map((photo, index) => (
-              <a key={photo.id} href={photo.url} target="_blank" rel="noopener noreferrer" className="overflow-hidden rounded-lg border border-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500" aria-label={`Abrir fotografía ${index + 1} en una nueva pestaña`}>
-                <img src={photo.url} alt={`Fotografía ${index + 1} del cliente`} className="aspect-square w-full object-cover transition-transform hover:scale-105" />
-              </a>
+              <div key={photo.id} className="relative overflow-hidden rounded-lg border border-gray-700">
+                <a href={photo.url} target="_blank" rel="noopener noreferrer" className="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500" aria-label={`Abrir fotografía ${index + 1} en una nueva pestaña`}>
+                  <img src={photo.url} alt={`Fotografía ${index + 1} del cliente`} className="aspect-square w-full object-cover transition-transform hover:scale-105" />
+                </a>
+                <Button type="button" variant="destructive" size="icon" aria-label={`Eliminar fotografía ${index + 1}`} title="Eliminar fotografía" onClick={() => { setDeleteError(null); setPhotoToDelete(photo); }} className="absolute right-2 top-2 shadow-md">
+                  <Trash2 aria-hidden="true" />
+                </Button>
+              </div>
             ))}
           </div>
         )}
         {uploading && <p role="status" className="mt-4 text-sm text-gray-400">Guardando fotografías...</p>}
+        <Dialog open={photoToDelete !== null} onOpenChange={(open) => { if (!open && !deleting) { setPhotoToDelete(null); setDeleteError(null); } }}>
+          <DialogContent className="border-gray-700 bg-gray-900">
+            <DialogHeader>
+              <DialogTitle className="text-white">Eliminar fotografía</DialogTitle>
+              <DialogDescription className="text-gray-400">¿Confirmas que deseas eliminar esta fotografía? Esta acción no se puede deshacer.</DialogDescription>
+            </DialogHeader>
+            {deleteError && <p role="alert" className="text-sm text-red-400">{deleteError}</p>}
+            <DialogFooter>
+              <Button type="button" variant="outline" disabled={deleting} onClick={() => setPhotoToDelete(null)}>Cancelar</Button>
+              <Button type="button" variant="destructive" disabled={deleting} onClick={handleDelete}>{deleting ? "Eliminando..." : "Eliminar fotografía"}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
