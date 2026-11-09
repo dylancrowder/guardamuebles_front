@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/app-shell";
+import { ClientPhotos } from "@/components/client-photos";
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api-client";
 import { useParams } from "next/navigation";
@@ -1053,6 +1054,8 @@ export default function ClientDetailsPage() {
               )}
             </CardContent>
           </Card>
+
+          <ClientPhotos clientId={client.client._id} />
 
           {/* Pagos pendientes */}
           <div>

@@ -43,13 +43,18 @@ class ApiClient {
       const response = await fetch(url, {
         ...options,
         headers: {
-          'Content-Type': 'application/json',
+          ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
           ...options.headers,
         },
       })
 
       const responseText = await response.text()
-      const data = responseText ? JSON.parse(responseText) : undefined
+      let data: unknown
+      try {
+        data = responseText ? JSON.parse(responseText) : undefined
+      } catch {
+        data = undefined
+      }
 
       if (!response.ok) {
         return {
@@ -59,7 +64,7 @@ class ApiClient {
       }
 
       return {
-        data,
+        data: data as T | undefined,
         status: response.status,
       }
     } catch (error) {
@@ -81,6 +86,10 @@ class ApiClient {
       method: 'POST',
       body: body ? JSON.stringify(body) : undefined,
     })
+  }
+
+  async upload<T>(endpoint: string, body: FormData): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { method: 'POST', body })
   }
 
   async put<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
