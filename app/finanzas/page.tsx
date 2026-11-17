@@ -7,7 +7,10 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  DatabaseBackup,
+  Download,
   Plus,
+  RotateCcw,
   Trash2,
 } from "lucide-react"
 import { AppShell } from "@/components/app-shell"
@@ -15,6 +18,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { apiClient } from "@/lib/api-client"
 
 type FinanceType = "ingreso" | "egreso"
@@ -25,6 +36,7 @@ type FinanceCategory =
   | "empleados"
   | "combustible"
   | "gastos varios"
+  | "gastos mensuales"
   | "materiales"
   | "publicidad"
 
@@ -52,6 +64,7 @@ const expenseCategories: FinanceCategory[] = [
   "empleados",
   "combustible",
   "gastos varios",
+  "gastos mensuales",
   "materiales",
   "publicidad",
 ]
@@ -64,6 +77,7 @@ const categoryLabels: Record<FinanceCategory, string> = {
   empleados: "Empleados",
   combustible: "Combustible",
   "gastos varios": "Gastos varios",
+  "gastos mensuales": "Gastos mensuales",
   materiales: "Materiales",
   publicidad: "Publicidad",
 }
@@ -114,6 +128,9 @@ export default function FinanzasPage() {
   const [month, setMonth] = useState(() => new Date())
   const [selectedCategory, setSelectedCategory] = useState<FinanceCategory | "todos" | FinanceType>("todos")
   const [isLoading, setIsLoading] = useState(true)
+  const [isResetting, setIsResetting] = useState(false)
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false)
+  const [resetConfirmation, setResetConfirmation] = useState("")
   const [error, setError] = useState<string | null>(null)
 
   async function loadEntries() {
@@ -254,6 +271,48 @@ export default function FinanzasPage() {
     setEntries((current) => current.filter((entry) => entry.id !== id))
   }
 
+  function downloadFinanceBackup() {
+    const backup = {
+      application: "Sistema de Gestión",
+      dataType: "finanzas",
+      schemaVersion: 1,
+      generatedAt: new Date().toISOString(),
+      entries,
+    }
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" })
+    const downloadUrl = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-")
+    link.href = downloadUrl
+    link.download = `respaldo-finanzas-${timestamp}.json`
+    link.click()
+    window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000)
+  }
+
+  async function resetFinances() {
+    if (resetConfirmation !== "RESETEAR") return
+
+    setIsResetting(true)
+    setError(null)
+    downloadFinanceBackup()
+
+    const response = await apiClient.delete(FINANCE_ENDPOINT)
+
+    if (response.error) {
+      setError(response.error)
+    } else {
+      setEntries([])
+      setSelectedDate(today)
+      setMonth(new Date())
+      setSelectedCategory("todos")
+      setForm({ ...emptyForm, date: today })
+      setResetConfirmation("")
+      setIsResetDialogOpen(false)
+    }
+
+    setIsResetting(false)
+  }
+
   const monthName = new Intl.DateTimeFormat("es-AR", {
     month: "long",
     year: "numeric",
@@ -308,6 +367,52 @@ export default function FinanzasPage() {
             {error}
           </div>
         )}
+
+        <Dialog
+          open={isResetDialogOpen}
+          onOpenChange={(open) => {
+            if (!isResetting) {
+              setIsResetDialogOpen(open)
+              if (!open) setResetConfirmation("")
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>¿Resetear todas las finanzas?</DialogTitle>
+              <DialogDescription>
+                Se descargará un archivo JSON con todos los movimientos, incluidas las categorías de gastos mensuales, antes de borrar los datos del sistema. Guardá el archivo en un lugar seguro.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <Label htmlFor="finance-reset-confirmation">Escribí RESETEAR para confirmar</Label>
+              <Input
+                id="finance-reset-confirmation"
+                value={resetConfirmation}
+                onChange={(event) => setResetConfirmation(event.target.value)}
+                autoComplete="off"
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isResetting}
+                onClick={() => setIsResetDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={isResetting || resetConfirmation !== "RESETEAR" || entries.length === 0}
+                onClick={() => void resetFinances()}
+              >
+                {isResetting ? "Guardando respaldo y reseteando..." : "Descargar respaldo y resetear"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {isLoading ? (
           <Card>
@@ -364,6 +469,37 @@ export default function FinanzasPage() {
                 </CardContent>
               </Card>
             </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DatabaseBackup className="h-4 w-4" />
+                  Respaldo y reinicio
+                </CardTitle>
+                <CardDescription>
+                  Descargá los movimientos en JSON o guardá una copia automáticamente antes de empezar de cero.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3 sm:flex-row">
+                <Button type="button" variant="outline" className="gap-2" disabled={entries.length === 0} onClick={downloadFinanceBackup}>
+                  <Download className="h-4 w-4" />
+                  Descargar respaldo
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="gap-2"
+                  disabled={entries.length === 0}
+                  onClick={() => {
+                    setResetConfirmation("")
+                    setIsResetDialogOpen(true)
+                  }}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Resetear finanzas
+                </Button>
+              </CardContent>
+            </Card>
 
             <Card>
               <CardHeader>
@@ -761,4 +897,3 @@ export default function FinanzasPage() {
     </AppShell>
   )
 }
-
